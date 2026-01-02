@@ -40,11 +40,15 @@ jobs:
             mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
               -Dsonar.log.level=DEBUG \
               -Dsonar.projectKey=backend-portfolio \
+              -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
               -Dsonar.branch.name=${{ github.ref_name }}
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
               -Dsonar.log.level=DEBUG \
               -Dsonar.projectKey=backend-portfolio \
+              -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
               -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
               -Dsonar.pullrequest.branch=${{ github.head_ref }} \
               -Dsonar.pullrequest.base=${{ github.base_ref }}
