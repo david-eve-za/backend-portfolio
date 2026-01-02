@@ -26,11 +26,13 @@ public class JwtUtilTest {
     private JwtUtil jwtUtil;
 
     private String secretKey = "Neg4Z0GYLPWLsAx1FleNFuis0hfSsw1fucxxEHf30js=";
+    private final long expiration = 36000000; // 10 hours
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         ReflectionTestUtils.setField(jwtUtil, "SECRET_KEY", secretKey);
+        ReflectionTestUtils.setField(jwtUtil, "expiration", expiration);
     }
 
     private String createTestToken(String username, Date expirationDate) {
