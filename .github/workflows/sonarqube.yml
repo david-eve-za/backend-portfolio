@@ -37,11 +37,15 @@ jobs:
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+              -Dsonar.log.level=DEBUG \
               -Dsonar.projectKey=backend-portfolio \
               -Dsonar.branch.name=${{ github.ref_name }}
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+              -Dsonar.log.level=DEBUG \
               -Dsonar.projectKey=backend-portfolio \
-              -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+              -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+              -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+              -Dsonar.pullrequest.base=${{ github.base_ref }}
           fi
