@@ -3,7 +3,7 @@ package com.example.security.controller;
 import com.example.security.model.AuthRequest;
 import com.example.security.service.UserDetailsServiceImpl;
 import com.example.security.util.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,16 +16,12 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsServiceImpl userDetailsService;
 
     /**
      * Welcome endpoint for unauthenticated access.
