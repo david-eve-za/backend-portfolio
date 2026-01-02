@@ -39,21 +39,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
               -Dsonar.log.level=DEBUG \
-              -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-              -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+              -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+              -Dsonar.organization=$SONAR_ORGANIZATION \
+              -Dsonar.host.url=$SONAR_HOST_URL \
               -Dsonar.branch.name=${{ github.ref_name }} \
               -Dsonar.coverage.jacoco.xmlReportPaths=eureka-server/target/site/jacoco/jacoco.xml,api-gateway/target/site/jacoco/jacoco.xml,security-module/target/site/jacoco/jacoco.xml
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             mvn -B verify -X org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
               -Dsonar.log.level=DEBUG \
-              -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-              -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+              -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+              -Dsonar.organization=$SONAR_ORGANIZATION \
+              -Dsonar.host.url=$SONAR_HOST_URL \
               -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
               -Dsonar.pullrequest.branch=${{ github.head_ref }} \
               -Dsonar.pullrequest.base=${{ github.base_ref }} \
