@@ -1,0 +1,109 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+logs/
+*.log.*
+*.trace
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+*.rpm
+*.deb
+*.nupkg
+
+# IDEs and build tool files
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+.buildpath
+
+# VS Code
+.vscode/
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# Gradle
+.gradle/
+build/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.pid
+*.suo
+*.user
+*.userosscache
+*.sage
+*.token
+*.console
+*.backup
+*.sqlite
+*.sqlite-journal
+*.db
+*.bak
+
+# Spring Boot
+*.bak
+
+# Coverage reports
+/coverage/
+*.exec
+*.ec
+
+# Specific application configuration
+# Consider ignoring these in production, but sometimes helpful in dev.
+# For security reasons, sensitive configuration should be managed via environment variables or secrets management.
+# application*.properties.bak
+# application*.yml.bak
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Mac OS X
+.metadata
+.Trash
+# Temporary files
+*~
+# Backup files
+#*.bak
+#*#
+#*.old
+#*.orig
+#*.rej
+#*.swo
+#*.swp
+#*.tmp
+
+# Other generated files
+hs_err_pid*
+*.out
+
+# Kubernetes
+.kube/
