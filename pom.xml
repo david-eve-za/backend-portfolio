@@ -14,6 +14,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <lombok.version>1.18.30</lombok.version>
+    <sonar.projectKey>backend-project</sonar.projectKey>
+    <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
+    <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
   </properties>
 
   <dependencyManagement>
