@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>gon.cue</groupId>
-  <artifactId>backend-project</artifactId>
+  <artifactId>backend-portfolio</artifactId>
   <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
 
@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <lombok.version>1.18.30</lombok.version>
-    <sonar.projectKey>backend-project</sonar.projectKey>
+    <sonar.projectKey>backend-portfolio</sonar.projectKey>
     <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
     <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
   </properties>
