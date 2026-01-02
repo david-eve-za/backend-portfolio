@@ -1,6 +1,5 @@
 package com.example.security.config;
 
-import com.example.security.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +24,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Spring Security configuration for the application.
- * Configures authentication providers, filters, and authorization rules.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -36,16 +31,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return new UserDetailsServiceImpl();
-    }
+    private final UserDetailsService userDetailsService;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // Allow all origins for development
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -53,19 +44,13 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Configures the security filter chain.
-     * @param http The HttpSecurity object to configure.
-     * @return The SecurityFilterChain.
-     * @throws Exception if an error occurs during configuration.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/auth/authenticate")
                 )
-                .cors(Customizer.withDefaults()) // Enable CORS
+                .cors(Customizer.withDefaults())
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"))
                 )
@@ -80,35 +65,19 @@ public class SecurityConfig {
                 .build();
     }
 
-    /**
-     * Provides a password encoder.
-     * Using NoOpPasswordEncoder for demonstration purposes. In a production environment,
-     * a strong password encoder like BCryptPasswordEncoder should be used.
-     * @return The PasswordEncoder.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configures the authentication provider.
-     * @return The AuthenticationProvider.
-     */
     @Bean
-    public AuthenticationProvider authenticationProvider(){
-        DaoAuthenticationProvider authenticationProvider=new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(userDetailsService());
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return authenticationProvider;
     }
 
-    /**
-     * Provides the AuthenticationManager bean.
-     * @param config The AuthenticationConfiguration.
-     * @return The AuthenticationManager.
-     * @throws Exception if an error occurs.
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

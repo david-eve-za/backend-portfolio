@@ -1,7 +1,7 @@
 package com.example.security.controller;
 
 import com.example.security.model.AuthRequest;
-import com.example.security.service.UserDetailsServiceImpl;
+import com.example.security.model.AuthResponse;
 import com.example.security.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,9 +9,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,9 +28,6 @@ public class AuthControllerTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
-
-    @Mock
-    private UserDetailsServiceImpl userDetailsService; // Although not directly used in AuthController for loading, mock it for completeness
 
     @Mock
     private Authentication authentication;
@@ -51,11 +48,10 @@ public class AuthControllerTest {
         String expectedToken = "mocked_jwt_token";
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
         when(jwtUtil.generateToken("testuser")).thenReturn(expectedToken);
 
-        String token = authController.authenticateAndGetToken(authRequest);
-        assertEquals(expectedToken, token);
+        AuthResponse authResponse = authController.authenticateAndGetToken(authRequest);
+        assertEquals(expectedToken, authResponse.getToken());
     }
 
     @Test
@@ -63,9 +59,9 @@ public class AuthControllerTest {
         AuthRequest authRequest = new AuthRequest("wronguser", "wrongpassword");
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new UsernameNotFoundException("invalid user request !"));
+                .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        assertThrows(UsernameNotFoundException.class, () -> authController.authenticateAndGetToken(authRequest));
+        assertThrows(BadCredentialsException.class, () -> authController.authenticateAndGetToken(authRequest));
     }
 
     @Test

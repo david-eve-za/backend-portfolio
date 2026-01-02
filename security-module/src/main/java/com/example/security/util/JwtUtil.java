@@ -26,6 +26,10 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
+    @Value("${jwt.expiration}")
+    private long expiration;
+
+
     /**
      * Extracts the username from a JWT token.
      * @param token The JWT token.
@@ -110,7 +114,7 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours validity
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
