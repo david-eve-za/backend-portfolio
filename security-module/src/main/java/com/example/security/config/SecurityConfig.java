@@ -64,7 +64,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/auth/authenticate")
+                )
                 .cors(Customizer.withDefaults()) // Enable CORS
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"))
