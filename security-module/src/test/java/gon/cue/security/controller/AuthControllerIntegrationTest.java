@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import org.springframework.test.context.TestPropertySource;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,6 +34,7 @@ public class AuthControllerIntegrationTest {
         AuthRequest authRequest = new AuthRequest("user", "password");
 
         MvcResult result = mockMvc.perform(post("/auth/authenticate")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk())
@@ -48,6 +50,7 @@ public class AuthControllerIntegrationTest {
         AuthRequest authRequest = new AuthRequest("wronguser", "wrongpassword");
 
         mockMvc.perform(post("/auth/authenticate")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isForbidden());
