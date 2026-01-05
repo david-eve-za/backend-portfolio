@@ -20,6 +20,7 @@ The project is composed of the following modules:
 *   BCrypt (for password encoding)
 *   SonarQube (for code quality and security analysis)
 *   GitHub Actions (for CI/CD)
+*   Zipkin (for distributed tracing)
 
 ## Getting Started
 
@@ -28,6 +29,17 @@ The project is composed of the following modules:
 *   Java 17 JDK
 *   Maven 3.x
 *   Git
+*   Docker and Docker Compose
+
+### Distributed Tracing with Zipkin
+
+This project uses Zipkin for distributed tracing. To start Zipkin, run the following command from the root directory:
+
+```bash
+docker-compose up -d
+```
+
+You can then access the Zipkin UI at [http://localhost:9411](http://localhost:9411).
 
 ### Building the Project
 

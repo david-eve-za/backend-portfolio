@@ -107,3 +107,6 @@ hs_err_pid*
 
 # Kubernetes
 .kube/
+
+# Configuration Repository
+config-repo/
