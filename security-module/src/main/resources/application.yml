@@ -1,0 +1,15 @@
+jwt:
+  secret: bllRbxCOXTiYhFGAapfUb4ob3bglSuz7QJ8xUpmTV9M=
+  expiration: '36000000'
+
+spring:
+  application:
+    name: security-module
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
