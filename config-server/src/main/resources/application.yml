@@ -11,6 +11,11 @@ spring:
         git:
           uri: https://github.com/david-eve-za/config-repository
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
 management:
   tracing:
     sampling:
