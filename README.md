@@ -22,6 +22,18 @@ The project is composed of the following modules:
 *   GitHub Actions (for CI/CD)
 *   Zipkin (for distributed tracing)
 
+## Service Discovery
+
+This project utilizes **Spring Cloud Netflix Eureka** for service registration and discovery, with a dedicated `eureka-server` module. Each microservice registers itself with Eureka, allowing other services to discover and communicate with it.
+
+For deployments within a Kubernetes environment, **Kubernetes DNS** provides an additional layer of service discovery, enabling communication between services using their service names.
+
+### Key Aspects:
+
+*   **Registration & Discovery:** Microservices automatically register with the Eureka server upon startup and can discover other registered services.
+*   **Health Checks:** Eureka clients leverage Spring Boot Actuator's health endpoints to report their status, ensuring only healthy instances are routed to.
+*   **Load Balancing:** Client-side load balancing is implicitly handled when using Eureka-aware clients (e.g., `RestTemplate` with `@LoadBalanced` or Feign clients), distributing requests across available service instances.
+
 ## Getting Started
 
 ### Prerequisites
