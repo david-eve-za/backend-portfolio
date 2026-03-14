@@ -3,7 +3,7 @@ package gon.cue.security.controller;
 import gon.cue.security.dto.UpdateUserDto;
 import gon.cue.security.dto.UserDto;
 import gon.cue.security.model.User;
-import gon.cue.security.service.UserService;
+import gon.cue.security.service.port.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
