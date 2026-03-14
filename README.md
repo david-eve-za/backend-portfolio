@@ -32,7 +32,45 @@ For deployments within a Kubernetes environment, **Kubernetes DNS** provides an 
 
 *   **Registration & Discovery:** Microservices automatically register with the Eureka server upon startup and can discover other registered services.
 *   **Health Checks:** Eureka clients leverage Spring Boot Actuator's health endpoints to report their status, ensuring only healthy instances are routed to.
-*   **Load Balancing:** Client-side load balancing is implicitly handled when using Eureka-aware clients (e.g., `RestTemplate` with `@LoadBalanced` or Feign clients), distributing requests across available service instances.
+* **Load Balancing:** Client-side load balancing is implicitly handled when using Eureka-aware clients (e.g., `RestTemplate` with `@LoadBalanced` or Feign clients), distributing requests across available service instances.
+
+## Architecture
+
+### Package Structure (SOLID Principles)
+
+The security-module follows SOLID principles with this structure:
+
+- **config/** - Configuration classes separated by responsibility (SRP)
+  - SecurityConfig - Main security filter chain
+  - AuthenticationConfig - Authentication providers and password encoder
+  - CorsConfig - CORS configuration
+  - RateLimitConfig - Rate limiting configuration
+  - SecurityProperties - Externalized configuration (OCP)
+
+- **service/** - Business logic layer
+  - **port/** - Service interfaces (ISP, DIP)
+    - UserService
+    - AuthService
+    - JwtService
+  - **adapter/** - Service implementations
+    - UserServiceImpl
+    - AuthServiceImpl
+    - JwtServiceImpl
+
+- **mapper/** - DTO-Entity mapping (SRP)
+  - UserMapper
+
+- **filter/** - Security filters
+  - JwtAuthenticationFilter
+  - RateLimitingFilter
+
+- **controller/** - HTTP request handlers
+
+- **repository/** - Data access
+
+- **model/** - JPA entities
+
+- **dto/** - Data transfer objects
 
 ## Getting Started
 
