@@ -2,6 +2,8 @@ package gon.cue.security.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gon.cue.security.dto.UpdateUserDto;
+import gon.cue.security.dto.UserDto;
+import gon.cue.security.mapper.UserMapper;
 import gon.cue.security.model.User;
 import gon.cue.security.service.port.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +43,9 @@ public class UserControllerTest {
     @MockBean
     private UserService userService;
 
+    @MockBean
+    private UserMapper userMapper;
+
     private User testUser;
     private User adminUser;
 
@@ -47,9 +53,16 @@ public class UserControllerTest {
     void setUp() {
         testUser = new User(1L, "testuser", "password", new HashSet<>());
         adminUser = new User(2L, "adminuser", "adminpassword", new HashSet<>());
-        // Mocking behavior for findByUsername as it's used by @AuthenticationPrincipal
         when(userService.findByUsername("testuser")).thenReturn(Optional.of(testUser));
         when(userService.findByUsername("adminuser")).thenReturn(Optional.of(adminUser));
+        when(userMapper.toDto(any(User.class))).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            return new UserDto(u.getId(), u.getUsername());
+        });
+        when(userMapper.toDtoList(any(List.class))).thenAnswer(invocation -> {
+            List<User> users = invocation.getArgument(0);
+            return users.stream().map(u -> new UserDto(u.getId(), u.getUsername())).toList();
+        });
     }
 
     @Test
@@ -65,12 +78,13 @@ public class UserControllerTest {
     @WithMockUser(username = "testuser", roles = {"USER"})
     void updateCurrentUserProfile_shouldUpdateAndReturnUser() throws Exception {
         UpdateUserDto updateDto = new UpdateUserDto("newusername");
-        User updatedUser = new User(1L, "newusername", "password", new HashSet<>()); // password remains same
+        User updatedUser = new User(1L, "newusername", "password", new HashSet<>());
         when(userService.save(any(User.class))).thenReturn(updatedUser);
+        when(userMapper.toDto(any(User.class))).thenReturn(new UserDto(1L, "newusername"));
 
         mockMvc.perform(put("/api/users/me").with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateDto)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(updatedUser.getId()))
                 .andExpect(jsonPath("$.username").value(updatedUser.getUsername()));
