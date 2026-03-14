@@ -2,6 +2,7 @@ package gon.cue.security.service;
 
 import gon.cue.security.model.User;
 import gon.cue.security.repository.UserRepository;
+import gon.cue.security.service.adapter.UserServiceImpl;
 import gon.cue.security.service.port.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
