@@ -1,10 +1,35 @@
+security:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - X-XSRF-TOKEN
+    allow-credentials: true
+  rate-limit:
+    capacity: 10
+    refill-tokens: 10
+    refill-duration: 1m
+  jwt:
+    secret: bllRbxCOXTiYhFGAapfUb4ob3bglSuz7QJ8xUpmTV9M=
+    expiration: 36000000
+    algorithm: HS256
+
 jwt:
   secret: bllRbxCOXTiYhFGAapfUb4ob3bglSuz7QJ8xUpmTV9M=
   expiration: '36000000'
 
 spring:
   application:
-    name: security-module
+    name: security-service
 
 management:
   tracing:
