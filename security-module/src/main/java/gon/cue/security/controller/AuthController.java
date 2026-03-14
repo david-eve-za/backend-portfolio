@@ -2,11 +2,9 @@ package gon.cue.security.controller;
 
 import gon.cue.security.model.AuthRequest;
 import gon.cue.security.model.AuthResponse;
-import gon.cue.security.util.JwtUtil;
+import gon.cue.security.service.port.JwtService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,8 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     @GetMapping("/welcome")
     public String welcome() {
@@ -23,10 +20,8 @@ public class AuthController {
     }
 
     @PostMapping("/authenticate")
-    public AuthResponse authenticateAndGetToken(@RequestBody AuthRequest authRequest) {
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
-        // If authentication is successful, the method proceeds. Otherwise, an exception is thrown.
-        String token = jwtUtil.generateToken(authRequest.getUsername());
+    public AuthResponse authenticateAndGetToken(@RequestBody @Valid AuthRequest authRequest) {
+        String token = jwtService.generateToken(authRequest.getUsername());
         return new AuthResponse(token);
     }
 
