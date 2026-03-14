@@ -2,6 +2,7 @@ package gon.cue.security.service;
 
 import gon.cue.security.model.User;
 import gon.cue.security.repository.UserRepository;
+import gon.cue.security.service.port.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,7 +24,7 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private UserService userService;
+    private UserServiceImpl userService;
 
     @BeforeEach
     void setUp() {
@@ -103,26 +104,23 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_shouldReturnUpdatedUser_whenUserExists() {
+    void updateUsername_shouldReturnUpdatedUser_whenUserExists() {
         User existingUser = new User(1L, "olduser", "oldpass", new HashSet<>());
-        User updatedUserData = new User(null, "newuser", "newpass", new HashSet<>());
         when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
-        User result = userService.updateUser(1L, updatedUserData);
+        User result = userService.updateUsername(1L, "newuser");
         assertEquals(1L, result.getId());
         assertEquals("newuser", result.getUsername());
-        assertEquals("newpass", result.getPassword()); // Assuming password update is handled
         verify(userRepository, times(1)).findById(1L);
         verify(userRepository, times(1)).save(existingUser);
     }
 
     @Test
-    void updateUser_shouldThrowException_whenUserDoesNotExist() {
-        User updatedUserData = new User(null, "newuser", "newpass", new HashSet<>());
+    void updateUsername_shouldThrowException_whenUserDoesNotExist() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(UsernameNotFoundException.class, () -> userService.updateUser(1L, updatedUserData));
+        assertThrows(UsernameNotFoundException.class, () -> userService.updateUsername(1L, "newuser"));
         verify(userRepository, times(1)).findById(1L);
         verify(userRepository, never()).save(any(User.class));
     }

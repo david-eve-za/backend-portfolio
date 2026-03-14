@@ -3,7 +3,7 @@ package gon.cue.security.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gon.cue.security.dto.UpdateUserDto;
 import gon.cue.security.model.User;
-import gon.cue.security.service.UserService;
+import gon.cue.security.service.port.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
