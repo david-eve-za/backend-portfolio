@@ -1,4 +1,4 @@
-package gon.cue.security.config;
+package gon.cue.security.filter;
 
 import gon.cue.security.service.UserDetailsServiceImpl;
 import gon.cue.security.service.port.JwtService;
@@ -22,7 +22,7 @@ import java.io.IOException;
  */
 @Component
 @RequiredArgsConstructor
-public class JwtRequestFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
