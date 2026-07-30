@@ -1,0 +1,379 @@
+name: Dependabot Auto-Fix
+
+# ─────────────────────────────────────────────────────────────────────────
+#  Detecta alertas abiertas de Dependabot, las agrupa por ecosistema
+#  (maven, pip, npm) y por cada uno crea una rama + PR con el fix aplicado
+#  para que un humano lo revise y apruebe.
+#
+#  Requisitos:
+#   - Dependabot alerts habilitado en el repo (Settings > Code security)
+#   - Permisos del GITHUB_TOKEN: contents:write, pull-requests:write,
+#     security-events:read (ya configurados abajo)
+#   - Si el repo tiene branch protection que exige que los checks/CI
+#     corran en PRs creados por Actions, puede que necesites usar un PAT
+#     en vez del GITHUB_TOKEN por defecto (ver nota al final del archivo)
+# ─────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # todos los lunes a las 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: read
+  actions: read
+
+concurrency:
+  group: dependabot-auto-fix
+  cancel-in-progress: false
+
+env:
+  BASE_BRANCH: ${{ github.event.repository.default_branch }}
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────
+  # 1) Detectar alertas abiertas y clasificarlas por ecosistema
+  # ───────────────────────────────────────────────────────────────────
+  detect-alerts:
+    runs-on: ubuntu-latest
+    outputs:
+      has_maven: ${{ steps.parse.outputs.has_maven }}
+      has_pip: ${{ steps.parse.outputs.has_pip }}
+      has_npm: ${{ steps.parse.outputs.has_npm }}
+    steps:
+      - name: Obtener alertas abiertas de Dependabot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
+            --paginate --jq '.' > alerts.json || echo "[]" > alerts.json
+          echo "Total alertas abiertas: $(jq 'length' alerts.json)"
+
+      - name: Clasificar por ecosistema
+        id: parse
+        run: |
+          set -euo pipefail
+          jq -c '[.[] | select(.dependency.package.ecosystem=="maven")]' alerts.json > maven.json
+          jq -c '[.[] | select(.dependency.package.ecosystem=="pip")]'   alerts.json > pip.json
+          jq -c '[.[] | select(.dependency.package.ecosystem=="npm")]'  alerts.json > npm.json
+
+          maven_count=$(jq 'length' maven.json)
+          pip_count=$(jq 'length' pip.json)
+          npm_count=$(jq 'length' npm.json)
+
+          echo "Maven: $maven_count | Pip: $pip_count | npm: $npm_count"
+
+          echo "has_maven=$([ "$maven_count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_pip=$([ "$pip_count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_npm=$([ "$npm_count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Subir alertas como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-alerts
+          path: |
+            maven.json
+            pip.json
+            npm.json
+          retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────────
+  # 2) Fix Maven / Java 17+
+  # ───────────────────────────────────────────────────────────────────
+  fix-maven:
+    needs: detect-alerts
+    if: needs.detect-alerts.outputs.has_maven == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descargar alertas
+        uses: actions/download-artifact@v4
+        with:
+          name: dependabot-alerts
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Crear rama de fix
+        id: branch
+        run: |
+          set -euo pipefail
+          BRANCH="dependabot-fix/maven-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Aplicar fixes a dependencias vulnerables (pom.xml)
+        run: |
+          set -euo pipefail
+          echo "### Reporte de fixes Maven" > fix-report-maven.md
+          echo "" >> fix-report-maven.md
+
+          # Por cada alerta, intentamos subir esa dependencia puntual
+          # a su última versión estable (no major) usando versions-maven-plugin.
+          jq -c '.[]' maven.json | while read -r alert; do
+            PKG=$(echo "$alert" | jq -r '.dependency.package.name')
+            GHSA=$(echo "$alert" | jq -r '.security_advisory.ghsa_id')
+            SEVERITY=$(echo "$alert" | jq -r '.security_advisory.severity')
+            PATCHED=$(echo "$alert" | jq -r '.security_vulnerability.first_patched_version.identifier // "N/A"')
+
+            echo "- **$PKG** ($GHSA, severidad: $SEVERITY) -> versión parchada sugerida: $PATCHED" >> fix-report-maven.md
+
+            if [ -f "pom.xml" ]; then
+              mvn -q -B org.codehaus.mojo:versions-maven-plugin:2.17.1:use-latest-releases \
+                -Dincludes="$PKG" -DallowMajorUpdates=false -DgenerateBackupPoms=false || \
+                echo "  ⚠️ No se pudo actualizar $PKG automáticamente (puede requerir cambio mayor)" >> fix-report-maven.md
+            fi
+          done
+
+      - name: Verificar cambios
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilar y correr tests
+        if: steps.diff.outputs.changed == 'true'
+        run: mvn -q -B verify
+
+      - name: Commit y push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "dependabot-auto-fix[bot]"
+          git config user.email "dependabot-auto-fix@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(maven): actualiza dependencias vulnerables detectadas por Dependabot"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Crear Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base "$BASE_BRANCH" \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --title "fix(maven): corrige vulnerabilidades reportadas por Dependabot" \
+            --body-file fix-report-maven.md \
+            --label "security,dependabot-auto-fix,maven"
+
+  # ───────────────────────────────────────────────────────────────────
+  # 3) Fix Python
+  # ───────────────────────────────────────────────────────────────────
+  fix-python:
+    needs: detect-alerts
+    if: needs.detect-alerts.outputs.has_pip == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descargar alertas
+        uses: actions/download-artifact@v4
+        with:
+          name: dependabot-alerts
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar pip-audit
+        run: pip install --upgrade pip pip-audit
+
+      - name: Crear rama de fix
+        id: branch
+        run: |
+          set -euo pipefail
+          BRANCH="dependabot-fix/python-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Generar reporte de alertas
+        run: |
+          echo "### Reporte de fixes Python" > fix-report-python.md
+          echo "" >> fix-report-python.md
+          jq -c '.[]' pip.json | while read -r alert; do
+            PKG=$(echo "$alert" | jq -r '.dependency.package.name')
+            GHSA=$(echo "$alert" | jq -r '.security_advisory.ghsa_id')
+            SEVERITY=$(echo "$alert" | jq -r '.security_advisory.severity')
+            PATCHED=$(echo "$alert" | jq -r '.security_vulnerability.first_patched_version.identifier // "N/A"')
+            echo "- **$PKG** ($GHSA, severidad: $SEVERITY) -> versión parchada sugerida: $PATCHED" >> fix-report-python.md
+          done
+
+      - name: Aplicar fixes con pip-audit
+        run: |
+          set -euo pipefail
+          for REQ in requirements.txt requirements/*.txt; do
+            if [ -f "$REQ" ]; then
+              echo "Corrigiendo $REQ"
+              pip-audit -r "$REQ" --fix --dry-run=false || true
+            fi
+          done
+          # Si el proyecto usa pyproject.toml con poetry, se deja anotado
+          # en el reporte para revisión manual ya que pip-audit --fix
+          # no soporta ese formato directamente.
+          if [ -f "pyproject.toml" ] && ! [ -f "requirements.txt" ]; then
+            echo "" >> fix-report-python.md
+            echo "⚠️ Proyecto basado en pyproject.toml/poetry: revisar manualmente con \`poetry update <paquete>\`." >> fix-report-python.md
+          fi
+
+      - name: Verificar cambios
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instalar dependencias y correr tests (si existen)
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f pytest.ini ] || [ -f setup.cfg ] || compgen -G "tests/*" > /dev/null 2>&1; then
+            pip install pytest || true
+            pytest || echo "⚠️ Tests fallaron o no se encontraron, revisar manualmente"
+          fi
+
+      - name: Commit y push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "dependabot-auto-fix[bot]"
+          git config user.email "dependabot-auto-fix@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(python): actualiza dependencias vulnerables detectadas por Dependabot"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Crear Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base "$BASE_BRANCH" \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --title "fix(python): corrige vulnerabilidades reportadas por Dependabot" \
+            --body-file fix-report-python.md \
+            --label "security,dependabot-auto-fix,python"
+
+  # ───────────────────────────────────────────────────────────────────
+  # 4) Fix Node.js
+  # ───────────────────────────────────────────────────────────────────
+  fix-node:
+    needs: detect-alerts
+    if: needs.detect-alerts.outputs.has_npm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Descargar alertas
+        uses: actions/download-artifact@v4
+        with:
+          name: dependabot-alerts
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Crear rama de fix
+        id: branch
+        run: |
+          set -euo pipefail
+          BRANCH="dependabot-fix/node-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Generar reporte de alertas
+        run: |
+          echo "### Reporte de fixes Node.js" > fix-report-node.md
+          echo "" >> fix-report-node.md
+          jq -c '.[]' npm.json | while read -r alert; do
+            PKG=$(echo "$alert" | jq -r '.dependency.package.name')
+            GHSA=$(echo "$alert" | jq -r '.security_advisory.ghsa_id')
+            SEVERITY=$(echo "$alert" | jq -r '.security_advisory.severity')
+            PATCHED=$(echo "$alert" | jq -r '.security_vulnerability.first_patched_version.identifier // "N/A"')
+            echo "- **$PKG** ($GHSA, severidad: $SEVERITY) -> versión parchada sugerida: $PATCHED" >> fix-report-node.md
+          done
+
+      - name: Instalar dependencias
+        run: npm ci || npm install
+
+      - name: Aplicar npm audit fix
+        run: |
+          set -euo pipefail
+          npm audit fix || true
+
+          # Verificamos si quedan vulnerabilidades altas/críticas que
+          # requerirían --force (cambios potencialmente breaking).
+          REMAINING=$(npm audit --audit-level=high --json 2>/dev/null | jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical' || echo 0)
+          if [ "${REMAINING:-0}" -gt 0 ]; then
+            echo "" >> fix-report-node.md
+            echo "⚠️ Quedan $REMAINING vulnerabilidades altas/críticas que requieren cambios mayores (npm audit fix --force). No se aplicó automáticamente por riesgo de romper compatibilidad; revisar manualmente." >> fix-report-node.md
+          fi
+
+      - name: Verificar cambios
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Correr tests (si existen)
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          if npm run | grep -q " test"; then
+            npm test || echo "⚠️ Tests fallaron, revisar manualmente"
+          fi
+
+      - name: Commit y push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "dependabot-auto-fix[bot]"
+          git config user.email "dependabot-auto-fix@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(node): actualiza dependencias vulnerables detectadas por Dependabot"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Crear Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base "$BASE_BRANCH" \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --title "fix(node): corrige vulnerabilidades reportadas por Dependabot" \
+            --body-file fix-report-node.md \
+            --label "security,dependabot-auto-fix,nodejs"
+
+# ─────────────────────────────────────────────────────────────────────────
+# NOTA sobre permisos:
+# Si el repo tiene branch protection que exige que un CI externo corra
+# sobre el PR y ese CI está configurado para ignorar eventos disparados
+# por GITHUB_TOKEN, reemplaza `secrets.GITHUB_TOKEN` por un Personal
+# Access Token (fine-grained) guardado como secret, ej: secrets.PAT_DEPENDABOT_FIX,
+# tanto en el checkout (with: token:) como en los pasos que usan GH_TOKEN.
+# ─────────────────────────────────────────────────────────────────────────
