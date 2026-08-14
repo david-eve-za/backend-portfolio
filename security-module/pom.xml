@@ -12,7 +12,8 @@
     <name>security-module</name>
     <description>Security module for OAuth2/JWT authentication</description>
     <properties>
-        <jjwt.version>0.11.5</jjwt.version>
+        <nimbus-jwt.version>10.9.1</nimbus-jwt.version>
+        <bucket4j.version>8.14.0</bucket4j.version>
     </properties>
     <dependencies>
         <dependency>
@@ -39,16 +40,16 @@
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-reporter-brave</artifactId>
         </dependency>
-        <!-- Rate limiting -->
+        <!-- Rate limiting - NEW artifact names for JDK 21 (using JDK 17 artifacts compatible with 21) -->
         <dependency>
             <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-core</artifactId>
-            <version>8.10.1</version>
+            <artifactId>bucket4j_jdk17-core</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.bucket4j</groupId>
-            <artifactId>bucket4j-jcache</artifactId>
-            <version>8.10.1</version>
+            <artifactId>bucket4j_jdk17-jcache</artifactId>
+            <version>${bucket4j.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.cache</groupId>
@@ -58,7 +59,7 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.37.3</version>
+            <version>${nimbus-jwt.version}</version>
         </dependency>
         <!-- JWT Libraries -->
         <dependency>
