@@ -11,7 +11,12 @@ eureka:
     fetch-registry: 'false'
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
   tracing:
+    enabled: true
     sampling:
       probability: 1.0
   zipkin:
