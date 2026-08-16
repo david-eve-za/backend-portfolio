@@ -1,4 +1,4 @@
-package gon.cue.security.config;
+package gon.cue.security.filter;
 
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;

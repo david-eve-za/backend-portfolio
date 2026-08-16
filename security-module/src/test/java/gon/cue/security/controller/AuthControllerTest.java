@@ -2,7 +2,8 @@ package gon.cue.security.controller;
 
 import gon.cue.security.model.AuthRequest;
 import gon.cue.security.model.AuthResponse;
-import gon.cue.security.util.JwtUtil;
+import gon.cue.security.service.adapter.AuthServiceImpl;
+import gon.cue.security.service.port.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -21,10 +22,10 @@ import static org.mockito.Mockito.when;
 public class AuthControllerTest {
 
     @InjectMocks
-    private AuthController authController;
+    private AuthServiceImpl authService;
 
     @Mock
-    private JwtUtil jwtUtil;
+    private JwtService jwtService;
 
     @Mock
     private AuthenticationManager authenticationManager;
@@ -38,19 +39,14 @@ public class AuthControllerTest {
     }
 
     @Test
-    void welcome() {
-        assertEquals("Welcome to Security Module!", authController.welcome());
-    }
-
-    @Test
     void authenticateAndGetToken_success() {
         AuthRequest authRequest = new AuthRequest("testuser", "password");
         String expectedToken = "mocked_jwt_token";
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
-        when(jwtUtil.generateToken("testuser")).thenReturn(expectedToken);
+        when(jwtService.generateToken("testuser")).thenReturn(expectedToken);
 
-        AuthResponse authResponse = authController.authenticateAndGetToken(authRequest);
+        AuthResponse authResponse = authService.authenticate(authRequest);
         assertEquals(expectedToken, authResponse.getToken());
     }
 
@@ -61,11 +57,6 @@ public class AuthControllerTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
-        assertThrows(BadCredentialsException.class, () -> authController.authenticateAndGetToken(authRequest));
-    }
-
-    @Test
-    void userProfile() {
-        assertEquals("Welcome, authenticated user!", authController.userProfile());
+        assertThrows(BadCredentialsException.class, () -> authService.authenticate(authRequest));
     }
 }

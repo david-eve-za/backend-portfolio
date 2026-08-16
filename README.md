@@ -1,108 +1,254 @@
 # Backend Portfolio Project
 
-This is a multi-module Spring Boot project designed to showcase various backend services and architectural patterns, including a Eureka Discovery Server, an API Gateway, and a Security Module for authentication and authorization using JWTs.
+A multi-module Spring Boot microservices project demonstrating cloud-native backend
+patterns: service discovery, API gateway routing, centralized configuration, and JWT-based
+authentication/authorization — built on the latest Spring Boot 4.x and Java 21.
 
 ## Project Structure
 
-The project is composed of the following modules:
+The project is a Maven multi-module build composed of the following modules:
 
-*   **`eureka-server`**: Service Discovery using Netflix Eureka.
-*   **`api-gateway`**: API Gateway implemented with Spring Cloud Gateway.
-*   **`security-module`**: Handles user authentication and authorization with Spring Security and JWT.
+| Module | Port | Role |
+|--------|------|------|
+| **`eureka-server`** | `8761` | Service Discovery using Netflix Eureka |
+| **`api-gateway`** | `8080` | API Gateway implemented with Spring Cloud Gateway (WebFlux) |
+| **`security-module`** | `8080`\* | Authentication & authorization with Spring Security and JWT |
+| **`config-server`** | `8888` | Spring Cloud Config Server (Git backend) |
 
-## Technologies Used
+\* The security-module and api-gateway both default to `8080`; run only one per host, or
+override `server.port` when running them together.
 
-*   Java 17
-*   Spring Boot 3.x
-*   Spring Cloud (Eureka, Gateway)
-*   Maven
-*   JWT (JSON Web Tokens)
-*   BCrypt (for password encoding)
-*   SonarQube (for code quality and security analysis)
-*   GitHub Actions (for CI/CD)
-*   Zipkin (for distributed tracing)
+Additional directories:
 
-## Service Discovery
+*   **`config-repo/`** — the Git repository that backs `config-server`.
+*   **`monitoring/`** — Grafana + Prometheus + Loki stack via Docker Compose.
+*   **`docker-compose.yml`** — Zipkin for distributed tracing.
 
-This project utilizes **Spring Cloud Netflix Eureka** for service registration and discovery, with a dedicated `eureka-server` module. Each microservice registers itself with Eureka, allowing other services to discover and communicate with it.
+## Technology Stack
 
-For deployments within a Kubernetes environment, **Kubernetes DNS** provides an additional layer of service discovery, enabling communication between services using their service names.
+| Category | Technology | Version |
+|----------|------------|---------|
+| Language | Java | **21 (LTS)** |
+| Framework | Spring Boot | **4.1.0** |
+| Cloud | Spring Cloud | **2025.1.2** (Oakwood) |
+| Base | Spring Framework | **7.x** |
+| Spec baseline | Jakarta EE | **11** (Servlet 6.1) |
+| Build | Maven | **3.9.6+** / compiler plugin 3.15.0 |
+| Code generation | Lombok | **1.18.46** |
+| JWT | jjwt | **0.13.0** (`jjwt-api`, `jjwt-impl`, `jjwt-jackson`) |
+| JOSE/JWT (signing) | Nimbus JOSE+JWT | **10.9.1** |
+| Rate limiting | Bucket4j | **8.14.0** (`bucket4j_jdk17-*` artifacts) |
+| Coverage | JaCoCo | **0.8.15** |
+| Distributed tracing | Micrometer + Zipkin | Brave bridge |
+| Service discovery | Spring Cloud Netflix Eureka | 5.x |
+| API gateway | Spring Cloud Gateway Server WebFlux | 5.x |
+| Database | H2 (dev/test, security-module) | BOM-managed |
+| CI/CD | GitHub Actions | SonarQube analysis |
+| Observability | Grafana, Prometheus, Loki | Docker Compose |
 
-### Key Aspects:
+## Architecture
 
-*   **Registration & Discovery:** Microservices automatically register with the Eureka server upon startup and can discover other registered services.
-*   **Health Checks:** Eureka clients leverage Spring Boot Actuator's health endpoints to report their status, ensuring only healthy instances are routed to.
-*   **Load Balancing:** Client-side load balancing is implicitly handled when using Eureka-aware clients (e.g., `RestTemplate` with `@LoadBalanced` or Feign clients), distributing requests across available service instances.
+### Microservices Topology
+
+```
+                    ┌──────────────┐
+                    │   Client     │
+                    └──────┬───────┘
+                           │
+                  ┌────────▼────────┐
+                  │   api-gateway   │ :8080
+                  │ (Gateway/Route) │
+                  └────────┬────────┘
+                           │ discovers via Eureka
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+   ┌────────────────┐ ┌──────────┐ ┌─────────────┐
+   │ security-module│ │ config-  │ │  (future)  │
+   │    :8080       │ │ server   │ │  services   │
+   │  auth + JWT    │ │  :8888   │ │             │
+   └────────────────┘ └──────────┘ └─────────────┘
+            │              │
+            └──────┬───────┘
+                   │ register / discover
+            ┌──────▼───────┐
+            │ eureka-server│ :8761
+            │  (registry)  │
+            └──────────────┘
+                   │
+            ┌──────▼───────┐
+            │   Zipkin     │ :9411
+            │  (tracing)   │
+            └──────────────┘
+```
+
+### Service Discovery
+
+This project uses **Spring Cloud Netflix Eureka** (5.x) for service registration and
+discovery, hosted in the dedicated `eureka-server` module. Each microservice registers with
+Eureka on startup, allowing others to discover and communicate with it using service names
+instead of hardcoded addresses.
+
+For Kubernetes deployments, **Kubernetes DNS** can provide an additional layer of service
+discovery, enabling communication via service names.
+
+**Key aspects:**
+*   **Registration & Discovery:** Microservices auto-register with the Eureka server on
+    startup and can discover other registered services.
+*   **Health Checks:** Eureka clients leverage Spring Boot Actuator health endpoints to
+    report status, ensuring only healthy instances receive traffic.
+*   **Load Balancing:** Client-side load balancing is handled implicitly by Eureka-aware
+    clients (`RestTemplate` with `@LoadBalanced` or OpenFeign), distributing requests
+    across available instances.
+
+### Centralized Configuration
+
+The `config-server` module backs configuration with a Git repository
+(`config-repo/`). All microservices can fetch their configuration from this server on
+startup, externalizing environment-specific properties (development, staging, production).
+
+### Package Structure (SOLID Principles)
+
+The `security-module` follows SOLID principles with this structure:
+
+- **`config/`** — Configuration classes separated by responsibility (SRP)
+  - `SecurityConfig` — Main security filter chain
+  - `AuthenticationConfig` — Authentication providers and password encoder
+  - `CorsConfig` — CORS configuration
+  - `RateLimitConfig` — Rate limiting configuration
+  - `SecurityProperties` — Externalized configuration (OCP)
+  - `DataInitializer` — Seed data
+- **`service/`** — Business logic layer
+  - **`port/`** — Service interfaces (ISP, DIP): `UserService`, `AuthService`, `JwtService`
+  - **`adapter/`** — Service implementations: `UserServiceImpl`, `AuthServiceImpl`, `JwtServiceImpl`
+  - `UserDetailsServiceImpl` — Spring Security `UserDetailsService`
+- **`mapper/`** — DTO ↔ Entity mapping (SRP): `UserMapper`
+- **`filter/`** — Security filters: `JwtAuthenticationFilter`, `RateLimitingFilter`
+- **`controller/`** — HTTP request handlers: `AuthController`, `UserController`
+- **`repository/`** — Data access: `UserRepository`, `RoleRepository`
+- **`model/`** — JPA entities: `User`, `Role`, `AuthRequest`, `AuthResponse`
+- **`dto/`** — Data transfer objects: `UserDto`, `UpdateUserDto`
+
+## Upgrade Notes (to Spring Boot 4.x / Java 21)
+
+This project was upgraded from Spring Boot 3.1.0 / Spring Cloud 2022.0.3 / Java 17 to
+the current stack. Key breaking changes resolved during the migration:
+
+1.  **Spring Cloud Gateway artifact rename:** `spring-cloud-starter-gateway` →
+    `spring-cloud-starter-gateway-server-webflux` (Spring Cloud 2025.x).
+2.  **Bucket4j artifact rename:** `bucket4j-core`/`bucket4j-jcache` →
+    `bucket4j_jdk17-core`/`bucket4j_jdk17-jcache` (JDK-targeted artifacts).
+3.  **jjwt 0.13.0 API:** `SignatureAlgorithm` enum removed; signing is now fluent
+    (`Jwts.builder().signWith(key)` without an explicit algorithm enum).
+4.  **jakarta namespace:** all `javax.*` → `jakarta.*` (Jakarta EE 11 baseline).
+5.  **Spring Boot 4 test APIs:** `AutoConfigureMockMvc`/`@WebMvcTest` moved to
+    `org.springframework.boot.webmvc.test.autoconfigure` (new
+    `spring-boot-starter-webmvc-test` starter); `MockitoBean` moved to
+    `org.springframework.test.context.bean.override.mockito`; `@WithMockUser` now requires
+    `spring-boot-starter-security-test` instead of raw `spring-security-test`.
 
 ## Getting Started
 
 ### Prerequisites
 
-*   Java 17 JDK
-*   Maven 3.x
+*   **Java 21 JDK** (LTS)
+*   **Maven 3.9.6+**
 *   Git
-*   Docker and Docker Compose
+*   Docker and Docker Compose (for Zipkin, Grafana, Prometheus, Loki)
 
-### Distributed Tracing with Zipkin
+### Quick Start
 
-This project uses Zipkin for distributed tracing. To start Zipkin, run the following command from the root directory:
-
-```bash
-docker-compose up -d
-```
-
-You can then access the Zipkin UI at [http://localhost:9411](http://localhost:9411).
-
-### Building the Project
-
-To build all modules, navigate to the root directory of the project (`backend-portfolio`) and run:
+Build all modules from the root directory:
 
 ```bash
 mvn clean install
 ```
 
+Run the full test suite:
+
+```bash
+mvn test
+```
+
+### Distributed Tracing with Zipkin
+
+Start Zipkin from the root directory:
+
+```bash
+docker-compose up -d
+```
+
+Access the Zipkin UI at [http://localhost:9411](http://localhost:9411).
+
+### Monitoring (Grafana / Prometheus / Loki)
+
+```bash
+cd monitoring
+docker-compose up -d
+```
+
+Access:
+*   **Grafana:** [http://localhost:3000](http://localhost:3000) (`admin` / `admin`)
+*   **Prometheus:** [http://localhost:9090](http://localhost:9090)
+*   **Loki:** [http://localhost:3100](http://localhost:3100)
+
 ### Running the Services
 
 Each module is a Spring Boot application and can be run independently after building.
-
-#### 1. Eureka Server
-
-Navigate to the `eureka-server` directory and run:
+**Start order matters** — Eureka first, then config-server, then the rest:
 
 ```bash
-mvn spring-boot:run
+# Terminal 1 — Service Discovery
+cd eureka-server && mvn spring-boot:run
+
+# Terminal 2 — Config Server
+cd config-server && mvn spring-boot:run
+
+# Terminal 3 — Security Module
+cd security-module && mvn spring-boot:run
+
+# Terminal 4 — API Gateway
+cd api-gateway && mvn spring-boot:run
 ```
 
-#### 2. Security Module
+Verify the services are registered in the Eureka dashboard:
+[http://localhost:8761](http://localhost:8761).
 
-Navigate to the `security-module` directory and run:
+### API Usage
 
-```bash
-mvn spring-boot:run
-```
+1.  **Authenticate** — POST to `/auth/authenticate` with credentials:
+    ```bash
+    curl -X POST http://localhost:8080/auth/authenticate \
+      -H "Content-Type: application/json" \
+      -d '{"username":"user","password":"password"}'
+    ```
+    Returns a JWT in the `AuthResponse`.
 
-#### 3. API Gateway
+2.  **Access a protected resource** — include the JWT in the `Authorization` header:
+    ```bash
+    curl http://localhost:8080/auth/user/profile \
+      -H "Authorization: Bearer <YOUR_JWT_TOKEN>"
+    ```
 
-Navigate to the `api-gateway` directory and run:
+3.  **User management (ADMIN role)** — endpoints under `/api/users`:
+    *   `GET /api/users/me` — current user profile (any authenticated user)
+    *   `PUT /api/users/me` — update current user profile
+    *   `GET /api/users/{id}` — get user by id (`ADMIN`)
+    *   `GET /api/users` — list all users (`ADMIN`)
+    *   `DELETE /api/users/{id}` — delete user (`ADMIN`)
 
-```bash
-mvn spring-boot:run
-```
+## SonarQube Analysis
 
-### SonarQube Analysis
+The project integrates with SonarQube for continuous code quality and security analysis via
+GitHub Actions (`.github/workflows/sonarqube.yml`). The pipeline runs on pushes to `main`
+and on pull requests, using JDK 21 and JaCoCo coverage reports.
 
-This project integrates with SonarQube for continuous code quality and security analysis via GitHub Actions.
-
-**Configuration:**
-
-Ensure the following GitHub Secrets are set in your repository:
-*   `SONAR_TOKEN`: Your SonarQube user token.
-*   `SONAR_HOST_URL`: The URL of your SonarQube instance (e.g., `https://sonarcloud.io`).
-*   `SONAR_ORGANIZATION`: Your SonarQube organization key.
-
-The SonarQube analysis will automatically run on pushes to `main` and on pull requests. The `sonar.projectKey` is configured as `backend-portfolio`.
+**Required GitHub Secrets:**
+*   `SONAR_TOKEN` — your SonarQube user token
+*   `SONAR_HOST_URL` — your SonarQube instance URL (e.g., `https://sonarcloud.io`)
+*   `SONAR_ORGANIZATION` — your SonarQube organization key
+*   `SONAR_PROJECT_KEY` — the project key (`backend-portfolio`)
 
 ## Contributing
 
-Please adhere to the existing code style and conventions.
-If you find any issues or have suggestions, please open an issue or a pull request.
+Please adhere to the existing code style and conventions. If you find issues or have
+suggestions, open an issue or a pull request.
