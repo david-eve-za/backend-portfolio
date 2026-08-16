@@ -16,7 +16,7 @@
 - Ports: eureka `8761`, config-server `8888`, api-gateway `8080`, security-module `8081`.
 - Every task ends with `mvn -q -pl <module> test` (or `mvn -q -pl <module> -am verify` for cross-module) green, then a single focused commit.
 - jakarta.* namespace (not javax) — already migrated.
-- **Worktree note:** This plan targets the verified worktree file inventory (branch `integration-setup`): `security-module` has `util/JwtUtil.java` + `config/JwtRequestFilter.java` using jjwt **0.11.5** API; there is NO `SecurityProperties.java`, NO `JwtServiceImpl`, NO `JwtService` port. Plan deletes the real throwaway files (`JwtUtil`, `JwtRequestFilter`), not the ones an older audit named.
+- **Worktree note:** This plan was re-based onto `integration-setup` tip `913c313` (Spring Boot 4.1.0 lineage). On this lineage `security-module` DOES have: `config/SecurityProperties.java` (with `CorsProperties`, `RateLimitProperties`, `JwtProperties`), `service/adapter/JwtServiceImpl.java`, `service/port/JwtService.java`, `filter/JwtAuthenticationFilter.java` (uses jjwt 0.13.0), `service/adapter/AuthServiceImpl.java`, `mapper/UserMapper.java`. It does NOT have `util/JwtUtil.java` or `config/JwtRequestFilter.java` (those were a stale pre-upgrade lineage). Phase 2 deletes the real HMAC throwaway files: `JwtServiceImpl`, `JwtService` (port), `filter/JwtAuthenticationFilter`, and trims the `JwtProperties` block from `SecurityProperties`.
 - config-repo is a SEPARATE git repo (origin `github.com/david-eve-za/config-repository`); push is authorized.
 - No `mvnw` in repo — use system `mvn` locally and in CI.
 
@@ -38,14 +38,16 @@
 - `security-module/pom.xml` — add `spring-boot-starter-oauth2-authorization-server` + `spring-boot-starter-oauth2-resource-server`; remove jjwt trio, bucket4j trio, `javax.cache`, jjwt version property.
 - `security-module/.../config/AuthorizationServerConfig.java` — NEW (RSA keypair, JWKSource, RegisteredClientRepository, OAuth2TokenCustomizer, JwtDecoder, AuthorizationServerSettings).
 - `security-module/.../config/ResourceServerConfig.java` — NEW (`@Order(3)` servlet chain validating propagated JWT via issuer=self so `@PreAuthorize` works).
-- `security-module/.../config/SecurityConfig.java` — MODIFY (simplify to default chain, drop HMAC filter wiring, keep method security).
-- `security-module/.../config/JwtRequestFilter.java` — DELETE.
-- `security-module/.../util/JwtUtil.java` — DELETE.
-- `security-module/.../controller/AuthController.java` — MODIFY (drop JwtUtil; `/auth/authenticate` uses AuthenticationManager only or is removed).
-- `security-module/.../model/AuthResponse.java` — keep only if AuthController still returns it.
-- `security-module/.../application.yml` — MODIFY (remove root `jwt.*`, add oauth2 issuer config).
-- `security-module/src/test/.../util/JwtUtilTest.java` — DELETE.
-- `security-module/src/test/.../controller/AuthControllerTest.java`, `AuthControllerIntegrationTest.java` — REWRITE against `/oauth2/token`.
+- `security-module/.../config/SecurityConfig.java` — MODIFY (simplify to default chain, drop HMAC `JwtAuthenticationFilter` wiring, keep `@EnableMethodSecurity`).
+- `security-module/.../service/adapter/JwtServiceImpl.java` — DELETE (HMAC issuer; replaced by AuthZ Server).
+- `security-module/.../service/port/JwtService.java` — DELETE (interface whose only impl is removed).
+- `security-module/.../filter/JwtAuthenticationFilter.java` — DELETE (manual HMAC validation; replaced by resource-server chain).
+- `security-module/.../config/SecurityProperties.java` — MODIFY: remove the `JwtProperties` inner class and the `jwt` field (HMAC secret/expiration no longer used). Keep `CorsProperties` + `RateLimitProperties`.
+- `security-module/.../controller/AuthController.java` — MODIFY (drop the `JwtService`/`AuthService` token-emission path; `/auth/authenticate` uses `AuthenticationManager` only or is removed). Verify exact current imports against the integration-setup `AuthController` before editing.
+- `security-module/.../service/adapter/AuthServiceImpl.java`, `service/port/AuthService.java`, `mapper/UserMapper.java` — REVIEW: if they only wrap the HMAC `JwtService` token emission, simplify or delete; keep user/DTO logic. Confirm per-file before deleting.
+- `security-module/.../application.yml` — MODIFY (remove root `jwt.*` block and any `security.jwt.*` override; add `security.oauth2.issuer` config).
+- `security-module/src/test/.../util/JwtUtilTest.java` — DELETE (orphaned HMAC test on SB4 lineage; references `JwtServiceImpl` + jjwt `SignatureAlgorithm`). The class `JwtUtil` does NOT exist here, but this test class still does and must be removed.
+- `security-module/src/test/.../service/*`, `controller/AuthControllerTest.java`, `AuthControllerIntegrationTest.java` — REWRITE/trim against `/oauth2/token`; remove tests of the deleted `JwtService`/`JwtServiceImpl`.
 - `api-gateway/pom.xml` — add `spring-boot-starter-oauth2-resource-server`.
 - `api-gateway/.../config/SecurityConfig.java` (reactive) — NEW.
 - `api-gateway/.../application.yml` — add `spring.security.oauth2.resourceserver.jwt.issuer-uri`.
@@ -68,13 +70,13 @@
 
 - [ ] **Step 1: Confirm worktree has no half-done Commit A**
 
-Run: `cd /Volumes/Elements2/IdeaProjects/backend-project/.claude/worktrees/spec-design-oauth2 && git status --short`
-Expected: only `docs/superpowers/*` (the spec/plan) tracked-new; no modified `JwtUtil.java`/`application.yml`/`bootstrap.yml` beyond the baseline.
+Run: `git status --short`
+Expected: only `docs/superpowers/*` (the spec/plan) tracked-new; no modified `JwtServiceImpl.java`/`application.yml`/`bootstrap.yml` beyond the baseline.
 
 - [ ] **Step 2: Confirm throwaway files are the OLD-HMAC versions**
 
-Run: `git show HEAD:security-module/src/main/java/gon/cue/security/util/JwtUtil.java | grep -c 'parserBuilder\|SignatureAlgorithm.HS256'`
-Expected: `2` (confirms jjwt 0.11.5 HMAC issuer present — to be deleted in Phase 2, NOT migrated).
+Run: `git show HEAD:security-module/src/main/java/gon/cue/security/service/adapter/JwtServiceImpl.java | grep -c 'Jwts.builder()\|Jwts.SIG.HS256'`
+Expected: `2` (confirms jjwt 0.13.0 HMAC issuer present — to be deleted in Phase 2, NOT migrated).
 
 - [ ] **Step 3: Confirm spring.application.name values**
 
@@ -494,10 +496,10 @@ In `<dependencies>` add (BOM-managed, no version):
 </dependency>
 ```
 
-- [ ] **Step 3: Build security-module (will fail on missing JwtUtil refs — expected until 2.4)**
+- [ ] **Step 3: Build security-module (will fail on missing JwtServiceImpl/JwtService refs — expected until 2.4)**
 
 Run: `mvn -q -pl security-module clean compile`
-Expected: COMPILE FAILURE on `JwtUtil`/`JwtRequestFilter` (they are deleted in 2.4). This is expected mid-migration; proceed to 2.3-2.6 before re-building.
+Expected: COMPILE FAILURE — the old HMAC `JwtServiceImpl`/`JwtService` port are referenced by `AuthController`, `JwtAuthenticationFilter`, and `AuthControllerTest`; they are deleted in 2.4. This is expected mid-migration; proceed to 2.3-2.6 before re-building.
 
 - [ ] **Step 4: Do NOT commit yet — commit after Task 2.6 (whole security migration is one logical commit)**
 
@@ -664,9 +666,11 @@ public class AuthorizationServerConfig {
 **Files:**
 - Create: `security-module/src/main/java/gon/cue/security/config/ResourceServerConfig.java`
 - Modify: `security-module/src/main/java/gon/cue/security/config/SecurityConfig.java`
-- Delete: `security-module/src/main/java/gon/cue/security/util/JwtUtil.java`
-- Delete: `security-module/src/main/java/gon/cue/security/config/JwtRequestFilter.java`
-- Delete: `security-module/src/test/java/gon/cue/security/util/JwtUtilTest.java`
+- Delete: `security-module/src/main/java/gon/cue/security/service/adapter/JwtServiceImpl.java` (HMAC issuer, jjwt 0.13.0)
+- Delete: `security-module/src/main/java/gon/cue/security/service/port/JwtService.java` (HMAC port)
+- Delete: `security-module/src/main/java/gon/cue/security/filter/JwtAuthenticationFilter.java` (manual validation filter consumed by the old `SecurityConfig`)
+- Delete: `security-module/src/test/java/gon/cue/security/util/JwtUtilTest.java` (orphaned HMAC test importing `JwtServiceImpl` + jjwt)
+- Modify: `security-module/src/main/java/gon/cue/security/config/SecurityProperties.java` — trim the `JwtProperties` inner class + `jwt` field (HMAC no longer used)
 
 **Interfaces:**
 - Produces: `@Order(3)` servlet `SecurityFilterChain` validating propagated JWT via `issuer-uri` (self), mapping `scope`→`SCOPE_*` and `authorities`→`ROLE_*`; enables `@EnableMethodSecurity` so `@PreAuthorize` on `UserController` applies.
@@ -777,22 +781,24 @@ public class SecurityConfig {
 
 Run:
 ```bash
-git rm security-module/src/main/java/gon/cue/security/util/JwtUtil.java
-git rm security-module/src/main/java/gon/cue/security/config/JwtRequestFilter.java
+git rm security-module/src/main/java/gon/cue/security/service/adapter/JwtServiceImpl.java
+git rm security-module/src/main/java/gon/cue/security/service/port/JwtService.java
+git rm security-module/src/main/java/gon/cue/security/filter/JwtAuthenticationFilter.java
 git rm security-module/src/test/java/gon/cue/security/util/JwtUtilTest.java
 ```
+Then edit `config/SecurityProperties.java` to remove the `JwtProperties` inner class + the `jwt` field (HMAC secret/expiration no longer used).
 
 - [ ] **Step 4: (no build until AuthController trimmed in 2.5)**
 
 ---
 
-### Task 2.5: Trim AuthController (remove JwtUtil dependency)
+### Task 2.5: Trim AuthController (remove JwtService/HMAC dependency)
 
 **Files:**
 - Modify: `security-module/src/main/java/gon/cue/security/controller/AuthController.java`
 - Modify: `security-module/src/main/java/gon/cue/security/model/AuthResponse.java` (keep if used)
 
-- [ ] **Step 1: Replace AuthController to drop JwtUtil + token emission**
+- [ ] **Step 1: Replace AuthController to drop the JwtService port + HMAC token emission**
 
 Write `security-module/src/main/java/gon/cue/security/controller/AuthController.java`:
 ```java
@@ -833,10 +839,10 @@ public class AuthController {
 ```
 If `AuthResponse` is now unused (grep `AuthResponse` across module), `git rm` it too.
 
-- [ ] **Step 2: Check for other JwtUtil references**
+- [ ] **Step 2: Check for other HMAC/JwtService references**
 
-Run: `grep -rn "JwtUtil\|JwtRequestFilter\|model.AuthResponse" security-module/src`
-Expected: no main-source references (only possibly in tests to rewrite in 2.6).
+Run: `grep -rn "JwtService\|JwtServiceImpl\|JwtAuthenticationFilter\|model.AuthResponse" security-module/src`
+Expected: no main-source references (only in tests to rewrite in 2.6). If `AuthResponse` is now unused, `git rm` it.
 
 - [ ] **Step 3: Build security-module**
 
@@ -1014,8 +1020,8 @@ git commit -m "feat: migrate security-module to Spring Authorization Server (RSA
   injecting 'authorities' claim from scopes
 - ResourceServerConfig (@Order 3): self-validate propagated JWT, map
   scope->SCOPE_* and authorities->ROLE_* so @PreAuthorize applies
-- Delete HMAC throwaway: JwtUtil, JwtRequestFilter, JwtUtilTest
-- Simplify SecurityConfig; trim AuthController (drop JwtUtil emission)
+- Delete HMAC throwaway: JwtServiceImpl, JwtService (port), filter/JwtAuthenticationFilter, util/JwtUtilTest
+- Simplify SecurityConfig; trim SecurityProperties (drop JwtProperties block); trim AuthController (drop JwtService emission)
 - Rewrite AuthControllerTest + AuthControllerIntegrationTest against /oauth2/token
 - application.yml: remove root jwt.*, add security.oauth2.issuer"
 ```
@@ -1411,7 +1417,7 @@ Update the worktree/PR with a final validation note (tests green, compose health
 
 - **TDD where tests exist**: this repo has an existing test suite; keep green per task. New security code gets tests (Task 2.6) before/with implementation.
 - **One commit per task**; `mvn` green before each commit.
-- **The `JwtServiceImpl`/`SecurityProperties` named in the old audit memory DO NOT EXIST** in this branch — the real throwaway files are `util/JwtUtil.java` + `config/JwtRequestFilter.java` (jjwt 0.11.5). Do not go looking for the audit's files.
+- **Throwaway files on this lineage** (integration-setup/SB4): `service/adapter/JwtServiceImpl.java`, `service/port/JwtService.java`, `filter/JwtAuthenticationFilter.java` (the HMAC issuer + manual validator, jjwt 0.13.0). Also trim the `JwtProperties` inner class + `jwt` field from `config/SecurityProperties.java`. The files `util/JwtUtil.java` / `config/JwtRequestFilter.java` named in an earlier draft DO NOT exist here — do not search for them.
 - **config-repo is a separate repo** — Task G pushes to `github.com/david-eve-za/config-repository`, not the parent.
 - **Spring Boot 4.1 is recent**: when context7 in Task 2.1 returns anything contradicting the code blocks, trust context7 and update the block before coding.
 - **No `mvnw`** — use system `mvn`.
