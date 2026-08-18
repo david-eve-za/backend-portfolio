@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: eureka-server
+  cloud:
+    config:
+      enabled: 'false'
 
 eureka:
   client:
@@ -12,8 +15,6 @@ eureka:
 
 management:
   tracing:
+    enabled: false
     sampling:
-      probability: 1.0
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
+      probability: 0.0

@@ -1,5 +1,6 @@
 package gon.cue.security.service.adapter;
 
+import gon.cue.security.config.SecurityProperties;
 import gon.cue.security.service.port.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -7,7 +8,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.JwtParser;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +19,10 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
 
-    @Value("${jwt.secret}")
-    private String secretKey;
-
-    @Value("${jwt.expiration}")
-    private long expiration;
+    private final SecurityProperties securityProperties;
 
     @Override
     public String generateToken(String username) {
@@ -74,13 +72,13 @@ public class JwtServiceImpl implements JwtService {
                 .claims(claims)
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .expiration(new Date(System.currentTimeMillis() + securityProperties.getJwt().getExpiration()))
                 .signWith(getSignKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
     private SecretKey getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(securityProperties.getJwt().getSecret());
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

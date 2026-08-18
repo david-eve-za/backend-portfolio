@@ -1,0 +1,525 @@
+name: AI SDLC Agent
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of task (feature, bugfix, security, performance, refactor, dependabot)'
+        required: true
+        type: choice
+        options:
+          - feature
+          - bugfix
+          - security
+          - performance
+          - refactor
+          - dependabot
+      prompt:
+        description: 'Task description/prompt for the AI agent'
+        required: true
+        type: string
+      model:
+        description: 'NVIDIA model to use'
+        required: false
+        type: choice
+        options:
+          - meta/llama-3.1-70b-instruct
+          - meta/llama-3.1-405b-instruct
+          - nvidia/llama-3.1-nemotron-70b-instruct
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  security-events: read
+
+env:
+  NVIDIA_API_BASE: "https://integrate.api.nvidia.com/v1"
+  DEFAULT_MODEL: "meta/llama-3.1-70b-instruct"
+  SECURITY_MODEL: "nvidia/llama-3.1-nemotron-70b-instruct"
+  PERFORMANCE_MODEL: "meta/llama-3.1-405b-instruct"
+  REFACTOR_MODEL: "meta/llama-3.1-70b-instruct"
+  MAX_PROMPT_LENGTH: "10000"
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  detect-task-type:
+    name: Detect Task Type
+    runs-on: ubuntu-latest
+    outputs:
+      task_type: ${{ steps.detect.outputs.task_type }}
+      prompt: ${{ steps.detect.outputs.prompt }}
+      model: ${{ steps.detect.outputs.model }}
+      is_dependabot: ${{ steps.detect.outputs.is_dependabot }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Load configuration
+        id: config
+        run: |
+          CONFIG_FILE=".github/ai-agent-config.yml"
+          if [[ -f "$CONFIG_FILE" ]]; then
+            echo "config_file=$CONFIG_FILE" >> $GITHUB_OUTPUT
+          else
+            echo "config_file=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect task type and extract prompt
+        id: detect
+        run: |
+          set -euo pipefail
+          
+          TASK_TYPE=""
+          PROMPT=""
+          MODEL="${DEFAULT_MODEL}"
+          IS_DEPENDABOT="false"
+          
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TASK_TYPE="${{ github.event.inputs.task_type }}"
+            PROMPT="${{ github.event.inputs.prompt }}"
+            if [[ -n "${{ github.event.inputs.model }}" ]]; then
+              MODEL="${{ github.event.inputs.model }}"
+            fi
+            echo "Manual dispatch detected: $TASK_TYPE"
+            
+          elif [[ "${{ github.event_name }}" == "issues" ]]; then
+            ISSUE_BODY="${{ github.event.issue.body }}"
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            LABELS=$(echo "${{ github.event.issue.labels }}" | jq -r '.[].name' | tr '\n' ',' | sed 's/,$//')
+            
+            PROMPT="${ISSUE_TITLE}\n\n${ISSUE_BODY}"
+            
+            if echo "$LABELS" | grep -qi "enhancement"; then
+              TASK_TYPE="feature"
+              MODEL="${DEFAULT_MODEL}"
+            elif echo "$LABELS" | grep -qi "bug"; then
+              TASK_TYPE="bugfix"
+              MODEL="${DEFAULT_MODEL}"
+            elif echo "$LABELS" | grep -qi "security\|dependencies"; then
+              TASK_TYPE="security"
+              MODEL="${SECURITY_MODEL}"
+            elif echo "$LABELS" | grep -qi "performance"; then
+              TASK_TYPE="performance"
+              MODEL="${PERFORMANCE_MODEL}"
+            elif echo "$LABELS" | grep -qi "refactor"; then
+              TASK_TYPE="refactor"
+              MODEL="${REFACTOR_MODEL}"
+            else
+              TASK_TYPE="feature"
+              MODEL="${DEFAULT_MODEL}"
+            fi
+            echo "Issue detected with labels: $LABELS -> Task type: $TASK_TYPE"
+            
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="${{ github.event.pull_request.body }}"
+            
+            if [[ "$PR_AUTHOR" == "dependabot[bot]" ]]; then
+              IS_DEPENDABOT="true"
+              TASK_TYPE="dependabot"
+              MODEL="${DEFAULT_MODEL}"
+              PROMPT="Dependabot PR: ${PR_TITLE}\n\n${PR_BODY}"
+              echo "Dependabot PR detected"
+            else
+              TASK_TYPE="feature"
+              MODEL="${DEFAULT_MODEL}"
+              PROMPT="PR Review: ${PR_TITLE}\n\n${PR_BODY}"
+            fi
+          fi
+          
+          if [[ ${#PROMPT} -gt ${MAX_PROMPT_LENGTH} ]]; then
+            echo "Error: Prompt exceeds maximum length of ${MAX_PROMPT_LENGTH} characters" >&2
+            exit 1
+          fi
+          
+          echo "task_type=$TASK_TYPE" >> $GITHUB_OUTPUT
+          echo "prompt=$PROMPT" >> $GITHUB_OUTPUT
+          echo "model=$MODEL" >> $GITHUB_OUTPUT
+          echo "is_dependabot=$IS_DEPENDABOT" >> $GITHUB_OUTPUT
+
+  agent:
+    name: AI Agent Execution
+    needs: detect-task-type
+    if: needs.detect-task-type.outputs.task_type != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate and sanitize prompt
+        id: validate
+        run: |
+          set -euo pipefail
+          
+          PROMPT="${{ needs.detect-task-type.outputs.prompt }}"
+          TASK_TYPE="${{ needs.detect-task-type.outputs.task_type }}"
+          
+          echo "🔍 Validating prompt for task type: $TASK_TYPE"
+          echo "📝 Prompt length: ${#PROMPT} characters"
+          
+          if [[ ${#PROMPT} -gt ${MAX_PROMPT_LENGTH} ]]; then
+            echo "❌ Error: Prompt exceeds maximum length of ${MAX_PROMPT_LENGTH} characters" >&2
+            exit 1
+          fi
+          
+          DANGEROUS_PATTERNS=("rm -rf" "sudo" "eval" "exec" "wget" "curl.*|.*sh" "curl.*|.*bash" "chmod 777" "chown root" "dd if=" "mkfs" "fdisk")
+          WARNING_PATTERNS=("curl" "wget" "nc " "netcat" "telnet" "ssh " "scp " "rsync" "base64 -d" "openssl")
+          
+          for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+            if echo "$PROMPT" | grep -qiE "$pattern"; then
+              echo "⚠️ WARNING: Potentially dangerous pattern detected: $pattern" >&2
+              echo "   This will be logged but not blocked. Ensure this is intentional."
+            fi
+          done
+          
+          for pattern in "${WARNING_PATTERNS[@]}"; do
+            if echo "$PROMPT" | grep -qiE "$pattern"; then
+              echo "ℹ️ INFO: Suspicious pattern detected: $pattern - Please verify this is intentional"
+            fi
+          done
+          
+          echo "prompt=$PROMPT" >> $GITHUB_OUTPUT
+          echo "validated=true" >> $GITHUB_OUTPUT
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Aider
+        run: |
+          pip install --upgrade pip
+          pip install aider-chat
+          aider --version
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory /github/workspace
+
+      - name: Create working branch
+        id: branch
+        run: |
+          TASK_TYPE="${{ needs.detect-task-type.outputs.task_type }}"
+          BRANCH_NAME="ai-agent-${GITHUB_RUN_ID}-${TASK_TYPE}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          git checkout -b "$BRANCH_NAME"
+          echo "✅ Created branch: $BRANCH_NAME"
+
+      - name: Load prompt template
+        id: template
+        run: |
+          set -euo pipefail
+          
+          TASK_TYPE="${{ needs.detect-task-type.outputs.task_type }}"
+          PROMPT="${{ steps.validate.outputs.prompt }}"
+          
+          TEMPLATE_FILE=".github/prompts/${TASK_TYPE}_prompt.md"
+          
+          if [[ ! -f "$TEMPLATE_FILE" ]]; then
+            echo "❌ Error: Template file not found: $TEMPLATE_FILE" >&2
+            exit 1
+          fi
+          
+          FINAL_PROMPT=$(cat "$TEMPLATE_FILE" | sed "s/{{PROMPT}}/$PROMPT/g")
+          
+          echo "$FINAL_PROMPT" > /tmp/final_prompt.txt
+          echo "✅ Loaded template: $TEMPLATE_FILE"
+          echo "📄 Final prompt length: ${#FINAL_PROMPT} characters"
+          
+          echo "final_prompt_path=/tmp/final_prompt.txt" >> $GITHUB_OUTPUT
+
+      - name: Execute Aider with NVIDIA API
+        id: aider
+        env:
+          OPENAI_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          OPENAI_API_BASE: ${{ env.NVIDIA_API_BASE }}
+        run: |
+          set -euo pipefail
+          
+          MODEL="${{ needs.detect-task-type.outputs.model }}"
+          PROMPT_FILE="${{ steps.template.outputs.final_prompt_path }}"
+          
+          echo "🤖 Executing Aider with model: $MODEL"
+          echo "📝 Using prompt from: $PROMPT_FILE"
+          
+          aider --message "$(cat "$PROMPT_FILE")" \
+                --auto-commits \
+                --yes \
+                --model "$MODEL" \
+                --max-chat-history-tokens 8000 \
+                --map-tokens 1024 \
+                --no-stream \
+                2>&1 | tee /tmp/aider_output.log
+          
+          AIDER_EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [[ $AIDER_EXIT_CODE -ne 0 ]]; then
+            echo "❌ Aider execution failed with exit code: $AIDER_EXIT_CODE"
+            exit $AIDER_EXIT_CODE
+          fi
+          
+          echo "✅ Aider execution completed successfully"
+
+      - name: Security verification - Check sensitive files
+        id: security_check
+        run: |
+          set -euo pipefail
+          
+          echo "🔒 Running security verification..."
+          
+          SENSITIVE_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '\.(env|pem|key|p12|pfx|crt|cer|der)$|^(\.env|secrets?|credentials?|config\.json)$' || true)
+          
+          if [[ -n "$SENSITIVE_FILES" ]]; then
+            echo "❌ ERROR: Sensitive files were modified:" >&2
+            echo "$SENSITIVE_FILES" >&2
+            
+            echo "🔄 Reverting sensitive file changes..."
+            git checkout HEAD~1 -- $SENSITIVE_FILES
+            
+            echo "✅ Sensitive files reverted"
+            exit 1
+          fi
+          
+          echo "✅ No sensitive files modified"
+
+      - name: Security verification - Scan for secrets in diff
+        run: |
+          set -euo pipefail
+          
+          echo "🔍 Scanning diff for potential secrets..."
+          
+          DIFF=$(git diff HEAD~1 HEAD)
+          
+          SECRET_PATTERNS=(
+            "password\s*[:=]\s*['\"][^'\"]+['\"]"
+            "token\s*[:=]\s*['\"][^'\"]+['\"]"
+            "api[_-]?key\s*[:=]\s*['\"][^'\"]+['\"]"
+            "secret\s*[:=]\s*['\"][^'\"]+['\"]"
+            "private[_-]?key\s*[:=]\s*['\"][^'\"]+['\"]"
+            "access[_-]?key\s*[:=]\s*['\"][^'\"]+['\"]"
+            "aws[_-]?secret\s*[:=]\s*['\"][^'\"]+['\"]"
+            "bearer\s+[a-zA-Z0-9\-_]+"
+            "sk-[a-zA-Z0-9]{48}"
+            "gh[pousr]_[a-zA-Z0-9]{36,}"
+            "xox[baprs]-[a-zA-Z0-9\-]+"
+          )
+          
+          SECRETS_FOUND=false
+          for pattern in "${SECRET_PATTERNS[@]}"; do
+            if echo "$DIFF" | grep -qiE "$pattern"; then
+              echo "❌ POTENTIAL SECRET DETECTED: Pattern matched: $pattern" >&2
+              SECRETS_FOUND=true
+            fi
+          done
+          
+          if [[ "$SECRETS_FOUND" == "true" ]]; then
+            echo "🔄 Reverting changes due to potential secrets..." >&2
+            git reset --hard HEAD~1
+            exit 1
+          fi
+          
+          echo "✅ No secrets detected in diff"
+
+      - name: Detect project type and run tests
+        id: test
+        run: |
+          set -euo pipefail
+          
+          echo "🧪 Detecting project type and running tests..."
+          
+          if [[ -f "package.json" ]]; then
+            echo "📦 Node.js project detected"
+            if grep -q '"test"' package.json; then
+              npm ci
+              npm test
+            else
+              echo "ℹ️ No test script found in package.json"
+            fi
+            
+            if grep -q '"lint"' package.json; then
+              npm run lint
+            fi
+            if grep -q '"format"' package.json; then
+              npm run format -- --check
+            fi
+            
+          elif [[ -f "pyproject.toml" || -f "requirements.txt" || -f "setup.py" ]]; then
+            echo "🐍 Python project detected"
+            pip install pytest pytest-cov
+            pytest -v --tb=short
+            
+            if command -v ruff &> /dev/null; then
+              ruff check .
+            fi
+            if command -v black &> /dev/null; then
+              black --check .
+            fi
+            
+          elif [[ -f "go.mod" ]]; then
+            echo "🐹 Go project detected"
+            go test ./... -v
+            
+            if command -v golangci-lint &> /dev/null; then
+              golangci-lint run
+            fi
+            
+          elif [[ -f "pom.xml" ]]; then
+            echo "☕ Java/Maven project detected"
+            mvn test -q
+            
+          elif [[ -f "build.gradle" || -f "build.gradle.kts" ]]; then
+            echo "☕ Java/Gradle project detected"
+            ./gradlew test --no-daemon
+            
+          else
+            echo "⚠️ Unknown project type, skipping tests"
+          fi
+          
+          echo "✅ Tests completed"
+
+      - name: Generate PR title and body
+        id: pr_content
+        run: |
+          set -euo pipefail
+          
+          TASK_TYPE="${{ needs.detect-task-type.outputs.task_type }}"
+          MODEL="${{ needs.detect-task-type.outputs.model }}"
+          PROMPT="${{ steps.validate.outputs.prompt }}"
+          BRANCH="${{ steps.branch.outputs.branch_name }}"
+          
+          case "$TASK_TYPE" in
+            feature)
+              PREFIX="✨ Feature"
+              LABEL="ai-generated,enhancement"
+              ;;
+            bugfix)
+              PREFIX="🐛 Fix"
+              LABEL="ai-generated,bug"
+              ;;
+            security)
+              PREFIX="🔒 Security"
+              LABEL="ai-generated,security"
+              ;;
+            performance)
+              PREFIX="⚡ Performance"
+              LABEL="ai-generated,performance"
+              ;;
+            refactor)
+              PREFIX="🔧 Refactor"
+              LABEL="ai-generated,refactor"
+              ;;
+            dependabot)
+              PREFIX="📦 Dependencies"
+              LABEL="ai-generated,dependencies,security"
+              ;;
+            *)
+              PREFIX="🤖 AI Change"
+              LABEL="ai-generated"
+              ;;
+          esac
+          
+          SHORT_PROMPT=$(echo "$PROMPT" | head -c 100 | sed 's/[^a-zA-Z0-9 ]//g')
+          PR_TITLE="${PREFIX}: ${SHORT_PROMPT}..."
+          
+          CHANGES=$(git diff --stat HEAD~1 HEAD)
+          
+          PR_BODY="## AI Agent Generated Changes
+
+**Task Type:** $TASK_TYPE
+**Model Used:** $MODEL
+**Branch:** $BRANCH
+**Triggered by:** @${{ github.actor }}
+
+### Original Prompt
+\`\`\`
+$PROMPT
+\`\`\`
+
+### Changes Made
+\`\`\`
+$CHANGES
+\`\`\`
+
+### Review Checklist
+- [ ] Code follows project conventions and style guides
+- [ ] All tests pass
+- [ ] No sensitive data or secrets committed
+- [ ] Changes are minimal and focused
+- [ ] Documentation updated if needed
+- [ ] Breaking changes documented
+
+---
+*This PR was automatically generated by the AI SDLC Agent. Please review carefully before merging.*"
+          
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "pr_body=$PR_BODY" >> $GITHUB_OUTPUT
+          echo "pr_labels=$LABEL" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        id: create_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          PR_TITLE="${{ steps.pr_content.outputs.pr_title }}"
+          PR_BODY="${{ steps.pr_content.outputs.pr_body }}"
+          PR_LABELS="${{ steps.pr_content.outputs.pr_labels }}"
+          
+          echo "📝 Creating Pull Request..."
+          echo "Title: $PR_TITLE"
+          echo "Labels: $PR_LABELS"
+          
+          PR_URL=$(gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --label "$PR_LABELS" \
+            --assignee "${{ github.actor }}" \
+            --base main)
+          
+          echo "✅ Pull Request created: $PR_URL"
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment on issue/PR if applicable
+        if: github.event_name == 'issues' || github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          PR_URL="${{ steps.create_pr.outputs.pr_url }}"
+          
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            ISSUE_NUMBER="${{ github.event.issue.number }}"
+            gh issue comment "$ISSUE_NUMBER" --body "🤖 AI Agent has created a PR for this issue: $PR_URL"
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ needs.detect-task-type.outputs.is_dependabot }}" == "true" ]]; then
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            gh pr comment "$PR_NUMBER" --body "🤖 AI Agent has analyzed this Dependabot PR and created an updated implementation: $PR_URL"
+          fi
+          
+          echo "✅ Comment posted"
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "❌ Workflow failed. Current branch: $(git branch --show-current)"
+          echo "📋 Recent commits:"
+          git log --oneline -5
+          echo "📝 Diff summary:"
+          git diff --stat HEAD~1 HEAD || true

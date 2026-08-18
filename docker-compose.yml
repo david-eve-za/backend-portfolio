@@ -5,3 +5,82 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - zipkin
+
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - zipkin
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    depends_on:
+      - eureka-server
+      - config-server
+      - zipkin
+
+  security-module:
+    build:
+      context: ./security-module
+      dockerfile: Dockerfile
+    container_name: security-module
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    depends_on:
+      - eureka-server
+      - config-server
+      - zipkin
+
+  crud-service:
+    build:
+      context: ./crud-service
+      dockerfile: Dockerfile
+    container_name: crud-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    depends_on:
+      - eureka-server
+      - config-server
+      - zipkin
+    volumes:
+      - crud-service-data:/app/data
+
+volumes:
+  crud-service-data:

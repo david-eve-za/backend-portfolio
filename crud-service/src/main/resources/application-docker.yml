@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:/app/data/crud-service;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+  h2:
+    console:
+      enabled: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://eureka-server:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    hostname: crud-service
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

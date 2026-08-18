@@ -1,5 +1,6 @@
 package gon.cue.security.util;
 
+import gon.cue.security.config.SecurityProperties;
 import gon.cue.security.service.adapter.JwtServiceImpl;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -8,10 +9,10 @@ import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.security.Key;
 import java.util.Collections;
@@ -20,8 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 public class JwtUtilTest {
+
+    @Mock
+    private SecurityProperties securityProperties;
+
+    @Mock
+    private SecurityProperties.JwtProperties jwtProperties;
 
     @InjectMocks
     private JwtServiceImpl jwtUtil;
@@ -29,12 +37,13 @@ public class JwtUtilTest {
     private String secretKey = "Neg4Z0GYLPWLsAx1FleNFuis0hfSsw1fucxxEHf30js=";
     private final long expiration = 36000000; // 10 hours
 
-	@BeforeEach
-	public void setUp() {
-		MockitoAnnotations.openMocks(this);
-		ReflectionTestUtils.setField(jwtUtil, "secretKey", secretKey);
-		ReflectionTestUtils.setField(jwtUtil, "expiration", expiration);
-	}
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(securityProperties.getJwt()).thenReturn(jwtProperties);
+        when(jwtProperties.getSecret()).thenReturn(secretKey);
+        when(jwtProperties.getExpiration()).thenReturn(expiration);
+    }
 
     private String createTestToken(String username, Date expirationDate) {
         Map<String, Object> claims = new HashMap<>();

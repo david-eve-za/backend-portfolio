@@ -1,0 +1,209 @@
+# AI SDLC Agent Configuration
+# Version: 2.0.0
+# This file controls the behavior of the AI SDLC Agent workflow
+
+agent:
+  name: "AI SDLC Agent"
+  version: "2.0.0"
+  description: "Automated software development lifecycle agent using NVIDIA AI Foundation models"
+
+models:
+  default: "meta/llama-3.1-70b-instruct"
+  security: "nvidia/llama-3.1-nemotron-70b-instruct"
+  performance: "meta/llama-3.1-405b-instruct"
+  refactor: "meta/llama-3.1-70b-instruct"
+  dependabot: "meta/llama-3.1-70b-instruct"
+
+  # Model capabilities mapping
+  capabilities:
+    meta/llama-3.1-70b-instruct:
+      - general-coding
+      - feature-implementation
+      - bug-fixing
+      - refactoring
+      - dependency-updates
+    meta/llama-3.1-405b-instruct:
+      - complex-architecture
+      - performance-optimization
+      - large-refactoring
+    nvidia/llama-3.1-nemotron-70b-instruct:
+      - security-analysis
+      - vulnerability-fixing
+      - secure-coding
+
+safety:
+  max_prompt_length: 10000
+  block_sensitive_files: true
+  sensitive_patterns:
+    - "\\.env$"
+    - "\\.env\\..*"
+    - "secrets?\\."
+    - "credentials?\\."
+    - "config\\.json$"
+    - "\\.pem$"
+    - "\\.key$"
+    - "\\.p12$"
+    - "\\.pfx$"
+    - "\\.crt$"
+    - "\\.cer$"
+    - "\\.der$"
+    - "id_rsa"
+    - "id_ed25519"
+    - "\\.ssh/"
+    - "aws_credentials"
+    - "gcp_credentials"
+    - "azure_credentials"
+  dangerous_command_patterns:
+    - "rm\\s+-rf"
+    - "sudo\\s+"
+    - "eval\\s+"
+    - "exec\\s+"
+    - "wget\\s+.*\\|.*sh"
+    - "curl\\s+.*\\|.*bash"
+    - "chmod\\s+777"
+    - "chown\\s+root"
+    - "dd\\s+if="
+    - "mkfs"
+    - "fdisk"
+  warning_patterns:
+    - "curl\\s+"
+    - "wget\\s+"
+    - "nc\\s+"
+    - "netcat\\s+"
+    - "telnet\\s+"
+    - "ssh\\s+"
+    - "scp\\s+"
+    - "rsync\\s+"
+    - "base64\\s+-d"
+    - "openssl\\s+"
+
+  secret_patterns:
+    - "password\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "token\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "api[_-]?key\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "secret\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "private[_-]?key\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "access[_-]?key\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "aws[_-]?secret\\s*[:=]\\s*['\"][^'\"]+['\"]"
+    - "bearer\\s+[a-zA-Z0-9\\-_]+"
+    - "sk-[a-zA-Z0-9]{48}"
+    - "gh[pousr]_[a-zA-Z0-9]{36,}"
+    - "xox[baprs]-[a-zA-Z0-9\\-]+"
+
+testing:
+  frameworks:
+    node:
+      detect:
+        - "package.json"
+      install: "npm ci"
+      test: "npm test"
+      lint: "npm run lint"
+      format: "npm run format -- --check"
+      build: "npm run build"
+    python:
+      detect:
+        - "pyproject.toml"
+        - "requirements.txt"
+        - "setup.py"
+      install: "pip install pytest pytest-cov"
+      test: "pytest -v --tb=short"
+      lint: "ruff check ."
+      format: "black --check ."
+      type_check: "mypy ."
+    go:
+      detect:
+        - "go.mod"
+      install: ""
+      test: "go test ./... -v"
+      lint: "golangci-lint run"
+      format: "gofmt -l ."
+      build: "go build ./..."
+    java_maven:
+      detect:
+        - "pom.xml"
+      install: ""
+      test: "mvn test -q"
+      lint: "mvn checkstyle:check"
+      build: "mvn package -DskipTests"
+    java_gradle:
+      detect:
+        - "build.gradle"
+        - "build.gradle.kts"
+      install: ""
+      test: "./gradlew test --no-daemon"
+      lint: "./gradlew checkstyleMain --no-daemon"
+      build: "./gradlew build -x test --no-daemon"
+
+  # Test execution settings
+  timeout_minutes: 15
+  coverage_threshold: 80
+  fail_on_no_tests: false
+
+prompts:
+  directory: ".github/prompts"
+  templates:
+    feature: "feature_prompt.md"
+    bugfix: "bugfix_prompt.md"
+    security: "security_prompt.md"
+    dependabot: "dependabot_prompt.md"
+    performance: "performance_prompt.md"
+    refactor: "refactor_prompt.md"
+  placeholder: "{{PROMPT}}"
+
+git:
+  branch_prefix: "ai-agent"
+  commit_author:
+    name: "github-actions[bot]"
+    email: "github-actions[bot]@users.noreply.github.com"
+  conventional_commits: true
+  commit_types:
+    feature: "feat"
+    bugfix: "fix"
+    security: "security"
+    performance: "perf"
+    refactor: "refactor"
+    dependabot: "chore"
+    test: "test"
+    docs: "docs"
+
+github:
+  pr:
+    labels:
+      ai-generated: "ai-generated"
+      feature: "enhancement"
+      bugfix: "bug"
+      security: "security"
+      performance: "performance"
+      refactor: "refactor"
+      dependabot: "dependencies"
+    assignee_trigger: true
+    draft: false
+    base_branch: "main"
+  workflow:
+    timeout_minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      security-events: read
+
+loop_prevention:
+  enabled: true
+  ignore_branches:
+    - "ai-agent-*"
+  ignore_authors:
+    - "github-actions[bot]"
+    - "dependabot[bot]"
+
+template_variables:
+  language: "auto-detect"
+  framework: "auto-detect"
+  architecture: "auto-detect"
+  database: "auto-detect"
+  cache: "auto-detect"
+  message_queue: "auto-detect"
+
+notifications:
+  on_pr_created: true
+  on_failure: true
+  comment_on_trigger: true
