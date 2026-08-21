@@ -19,7 +19,12 @@
     <bucket4j.version>8.14.0</bucket4j.version>
     <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
     <jacoco.version>0.8.15</jacoco.version>
+    <checkstyle.version>3.5.0</checkstyle.version>
     <sonar.projectKey>backend-portfolio</sonar.projectKey>
+    <spring-ai.version>1.1.8</spring-ai.version>
+    <testcontainers.version>1.20.0</testcontainers.version>
+    <djl.version>0.28.0</djl.version>
+    <langchain4j.version>1.9.1</langchain4j.version>
   </properties>
 
   <dependencyManagement>
@@ -35,6 +40,34 @@
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-dependencies</artifactId>
         <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>ai.djl</groupId>
+        <artifactId>bom</artifactId>
+        <version>${djl.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>dev.langchain4j</groupId>
+        <artifactId>langchain4j-bom</artifactId>
+        <version>${langchain4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -59,7 +92,7 @@
     <module>security-module</module>
     <module>config-server</module>
     <module>crud-service</module>
-
+    <module>llm-service</module>
   </modules>
 
   <build>
@@ -72,6 +105,26 @@
           <release>${java.version}</release>
           <parameters>true</parameters>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${checkstyle.version}</version>
+        <configuration>
+          <configLocation>google_checks.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <failsOnError>true</failsOnError>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>

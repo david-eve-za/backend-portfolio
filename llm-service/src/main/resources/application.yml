@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: llm-service
+  profiles:
+    active: local
+  cloud:
+    config:
+      enabled: false
+
+server:
+  port: 8085
+
+spring.ai:
+  model:
+    chat: openai
+    embedding: openai
+  openai:
+    base-url: https://integrate.api.nvidia.com
+    api-key: ${NVIDIA_API_KEY:}
+    chat:
+      model: meta/llama-3.1-70b-instruct
+      max-tokens: 8192
+      options:
+        temperature: 0.2
+        top-p: 0.95
+    embedding:
+      model: nvidia/nv-embedqa-e5-v5
+  google:
+    genai:
+      api-key: ${GOOGLE_API_KEY:}
+      chat:
+        model: gemini-2.0-flash
+        options:
+          temperature: 0.3
+          top-p: 0.95
+          top-k: 40
+  ollama:
+    base-url: http://localhost:11434
+    chat:
+      model: llama3.2
+
+llm:
+  service:
+    default-provider: NVIDIA
+    tokenizer-cache-dir: ./tokenizers
+    translation-prompt-path: classpath:prompts/translation-prompt.txt
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
