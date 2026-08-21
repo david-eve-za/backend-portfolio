@@ -1,0 +1,36 @@
+spring:
+  ai:
+    openai:
+      api-key: ${NVIDIA_API_KEY}
+      base-url: https://integrate.api.nvidia.com
+      chat:
+        model: meta/llama-3.1-70b-instruct
+        max-tokens: 8192
+      embedding:
+        model: nvidia/nv-embedqa-e5-v5
+    google:
+      genai:
+        api-key: ${GOOGLE_API_KEY}
+      chat:
+        model: gemini-2.0-flash
+    ollama:
+      base-url: http://ollama:11434
+      chat:
+        model: llama3.2
+
+llm:
+  service:
+    default-provider: NVIDIA
+    tokenizer-cache-dir: /data/tokenizers
+    translation-prompt-path: classpath:prompts/translation-prompt.txt
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
