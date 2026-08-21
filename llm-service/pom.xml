@@ -33,6 +33,10 @@
             <groupId>ai.djl.huggingface</groupId>
             <artifactId>tokenizers</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ai.djl.sentencepiece</groupId>
+            <artifactId>sentencepiece</artifactId>
+        </dependency>
 
         <!-- LangChain4j for chunking -->
         <dependency>
