@@ -28,6 +28,10 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -51,6 +55,22 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
+            </plugin>
+            <!-- Jib Maven Plugin for container image building -->
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <ports>
+                            <port>8080</port>
+                        </ports>
+                        <environment>
+                            <EUREKA_CLIENT_SERVICEURL_DEFAULTZONE>http://eureka-server:8761/eureka/</EUREKA_CLIENT_SERVICEURL_DEFAULTZONE>
+                            <SPRING_CLOUD_CONFIG_URI>http://config-server:8888</SPRING_CLOUD_CONFIG_URI>
+                        </environment>
+                    </container>
+                </configuration>
             </plugin>
         </plugins>
     </build>

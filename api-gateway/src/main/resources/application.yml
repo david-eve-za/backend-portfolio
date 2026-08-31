@@ -5,9 +5,51 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: 'true'
+          enabled: 'false'
+      globalcors:
+        add-to-simple-url-handler-mapping: 'true'
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - http://localhost:4200
+              - http://localhost:8080
+              - http://localhost:8083
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: '*'
+            allowCredentials: 'true'
+      routes:
+        - id: security-auth
+          uri: lb://security-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+        - id: security-users
+          uri: lb://security-service
+          predicates:
+            - Path=/api/users/**
+        - id: llm-service
+          uri: lb://llm-service
+          predicates:
+            - Path=/api/llm/**
+        - id: crud-service
+          uri: lb://crud-service
+          predicates:
+            - Path=/api/v1/**
+        - id: frontend-service
+          uri: lb://frontend-service
+          predicates:
+            - Path=/**
+
 server:
   port: '8080'
+
 eureka:
   client:
     service-url:
@@ -18,3 +60,94 @@ management:
     enabled: false
     sampling:
       probability: 0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.netflix.eureka: DEBUG
+    reactor.netty: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: 'false'
+      globalcors:
+        add-to-simple-url-handler-mapping: 'true'
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - http://localhost:4200
+              - http://localhost:8080
+              - http://localhost:8083
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: '*'
+            allowCredentials: 'true'
+      routes:
+        - id: security-auth
+          uri: lb://security-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+        - id: security-users
+          uri: lb://security-service
+          predicates:
+            - Path=/api/users/**
+        - id: llm-service
+          uri: lb://llm-service
+          predicates:
+            - Path=/api/llm/**
+        - id: crud-service
+          uri: lb://crud-service
+          predicates:
+            - Path=/api/v1/**
+        - id: frontend-service
+          uri: lb://frontend-service
+          predicates:
+            - Path=**
+
+    config:
+      uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka/
+
+management:
+  tracing:
+    enabled: false
+    sampling:
+      probability: 0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.netflix.eureka: DEBUG
+    reactor.netty: DEBUG
