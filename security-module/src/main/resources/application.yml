@@ -26,6 +26,9 @@ security:
 spring:
   application:
     name: security-service
+  cloud:
+    config:
+      import: "optional:configserver:"
 
 server:
   port: 8081
@@ -35,8 +38,43 @@ management:
     enabled: false
     sampling:
       probability: 0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: gon.cue.security
+  paths-to-match: /api/**
+  show-actuator: true
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    config:
+      uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka/
