@@ -1,0 +1,32 @@
+<div [class]="containerClasses()" [attr.aria-label]="label() || 'Loading'" role="status">
+  @if (type() === 'default') {
+    <lucide-icon [img]="LoaderIcon" [class]="sizeClasses() + ' animate-spin text-primary'" aria-hidden="true" />
+  } @else if (type() === 'dots') {
+    <div class="flex gap-1" [style.height.px]="size() === 'sm' ? 8 : size() === 'md' ? 12 : 16">
+      @for (i of [1,2,3]; track i) {
+        <div
+          class="rounded-full bg-primary animate-bounce"
+          [style.width.px]="size() === 'sm' ? 4 : size() === 'md' ? 6 : 8"
+          [style.height.px]="size() === 'sm' ? 4 : size() === 'md' ? 6 : 8"
+          [style.animation-delay.ms]="i * 150"
+          aria-hidden="true"
+        ></div>
+      }
+    </div>
+  } @else if (type() === 'bars') {
+    <div class="flex gap-1" [style.height.px]="size() === 'sm' ? 16 : size() === 'md' ? 24 : 32">
+      @for (i of [1,2,3,4]; track i) {
+        <div
+          class="rounded bg-primary animate-pulse"
+          [style.width.px]="size() === 'sm' ? 3 : size() === 'md' ? 4 : 5"
+          [style.animation-delay.ms]="i * 200"
+          aria-hidden="true"
+        ></div>
+      }
+    </div>
+  }
+
+  @if (label()) {
+    <span class="sr-only">{{ label() }}</span>
+  }
+</div>

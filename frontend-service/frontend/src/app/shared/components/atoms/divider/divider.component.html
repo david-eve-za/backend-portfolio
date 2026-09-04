@@ -1,0 +1,15 @@
+<div [class]="containerClasses()" [class]="class()" role="separator" [attr.aria-orientation]="orientation()">
+  @if (label() && labelPosition() === 'start') {
+    <span [class]="labelClasses()">{{ label() }}</span>
+    <div [class]="lineClasses()"></div>
+  } @else if (label() && labelPosition() === 'end') {
+    <div [class]="lineClasses()"></div>
+    <span [class]="labelClasses()">{{ label() }}</span>
+  } @else if (label()) {
+    <div [class]="lineClasses()"></div>
+    <span [class]="labelClasses()">{{ label() }}</span>
+    <div [class]="lineClasses()"></div>
+  } @else {
+    <div [class]="lineClasses()"></div>
+  }
+</div>

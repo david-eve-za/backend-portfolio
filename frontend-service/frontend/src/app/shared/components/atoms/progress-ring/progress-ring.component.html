@@ -1,0 +1,44 @@
+<svg
+  [attr.width]="svgSize()"
+  [attr.height]="svgSize()"
+  [attr.viewBox]="viewBox()"
+  [role]="img"
+  [attr.aria-label]="ariaLabel() || (percentage() + '% complete')"
+  class="text-primary"
+>
+  <circle
+    [attr.cx]="center()"
+    [attr.cy]="center()"
+    [attr.r]="radius() - strokeWidth()"
+    [attr.stroke-width]="strokeWidth()"
+    [attr.stroke]="trackColor"
+    fill="none"
+    class="text-muted"
+  />
+  <circle
+    [attr.cx]="center()"
+    [attr.cy]="center()"
+    [attr.r]="radius() - strokeWidth()"
+    [attr.stroke-width]="strokeWidth()"
+    [attr.stroke]="progressColor()"
+    fill="none"
+    [attr.stroke-dasharray]="circumference()"
+    [attr.stroke-dashoffset]="strokeDashoffset()"
+    [attr.stroke-linecap]="'round'"
+    class="transition-all duration-300 ease-out transform -rotate-90"
+    style="transform-origin: center;"
+  />
+  @if (showValue()) {
+    <text
+      [attr.x]="center()"
+      [attr.y]="center() + radius() * 0.1"
+      text-anchor="middle"
+      dominant-baseline="middle"
+      [style.font-size.px]="radius() * 0.4"
+      fill="currentColor"
+      font-weight="600"
+    >
+      {{ percentage() }}%
+    </text>
+  }
+</svg>

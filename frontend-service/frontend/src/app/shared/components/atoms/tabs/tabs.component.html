@@ -1,0 +1,57 @@
+<div [class]="containerClasses()" [attr.data-orientation]="orientation()">
+  <nav
+    [role]="tablist"
+    [attr.aria-orientation]="orientation()"
+    [class]="navClasses()"
+  >
+    @for (tab of tabs(); track tab.id) {
+      <button
+        [role]="tab"
+        [id]="'tab-' + tab.id"
+        [attr.aria-selected]="value() === tab.id"
+        [attr.aria-controls]="'panel-' + tab.id"
+        [attr.aria-disabled]="tab.disabled || disabled()"
+        [disabled]="tab.disabled || disabled()"
+        [class]="tabClasses(tab)"
+        (click)="selectTab(tab)"
+        (keydown.right)="orientation() === 'horizontal' && focusNext($event)"
+        (keydown.left)="orientation() === 'horizontal' && focusPrev($event)"
+        (keydown.down)="orientation() === 'vertical' && focusNext($event)"
+        (keydown.up)="orientation() === 'vertical' && focusPrev($event)"
+        (keydown.home)="focusFirst($event)"
+        (keydown.end)="focusLast($event)"
+      >
+        @if (tab.icon) {
+          <lucide-icon [img]="tab.icon" class="h-4 w-4" aria-hidden="true" />
+        }
+        <span>{{ tab.label }}</span>
+        @if (tab.badge !== undefined) {
+          <span class="ml-2 px-1.5 py-0.5 text-xs font-medium bg-muted rounded-full">
+            {{ tab.badge }}
+          </span>
+        }
+      </button>
+    }
+
+    @if (variant() === 'line' && orientation() === 'horizontal') {
+      <div
+        class="absolute bottom-0 left-0 h-0.5 bg-primary transition-transform duration-200 ease-out"
+        [style.transform]="'translateX(' + indicatorPosition() + 'px)'"
+        [style.width]="indicatorWidth() + 'px'"
+        aria-hidden="true"
+      ></div>
+    }
+  </nav>
+
+  @for (tab of tabs(); track tab.id) {
+    <div
+      [role]="tabpanel"
+      [id]="'panel-' + tab.id"
+      [attr.aria-labelledby]="'tab-' + tab.id"
+      [hidden]="value() !== tab.id"
+      class="mt-4"
+    >
+      <ng-content select="[tab=" + tab.id + "]" />
+    </div>
+  }
+</div>

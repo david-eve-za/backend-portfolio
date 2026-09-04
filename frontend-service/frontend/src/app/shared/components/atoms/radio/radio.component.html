@@ -1,0 +1,77 @@
+<div class="w-full">
+  @if (label()) {
+    <label class="block text-sm font-medium text-foreground mb-2">
+      {{ label() }}
+      @if (required()) {
+        <span class="text-destructive ml-1" aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div
+    [role]="radiogroup"
+    [attr.aria-label]="ariaLabel()"
+    [attr.aria-describedby]="describedBy()"
+    [attr.aria-required]="required()"
+    class="space-y-2"
+  >
+    @for (option of options(); track option.value) {
+      <label
+        [class]="optionClasses(option)"
+        class="relative cursor-pointer transition-colors"
+      >
+        <input
+          type="radio"
+          [name]="name()"
+          [value]="option.value"
+          [checked]="isSelected(option)"
+          [disabled]="disabled() || option.disabled"
+          [required]="required()"
+          [attr.aria-label]="option.label"
+          class="peer sr-only"
+          (change)="onChange(option)"
+        />
+
+        @if (card()) {
+          <div class="relative p-4 border rounded-lg bg-surface">
+            <div class="absolute left-3 top-3">
+              <div class="relative w-5 h-5">
+                <div class="absolute inset-0 rounded-full border-2 border-border peer-checked:border-primary peer-checked:bg-primary transition-colors"></div>
+                <lucide-icon
+                  [img]="CircleIcon"
+                  class="absolute inset-0 h-5 w-5 text-primary-foreground opacity-0 peer-checked:opacity-100 transition-opacity"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+            <div class="pl-10">
+              <span class="block text-sm font-medium text-foreground">{{ option.label }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="flex items-center gap-3">
+            <div class="relative w-5 h-5 flex-shrink-0">
+              <div class="absolute inset-0 rounded-full border-2 border-border peer-checked:border-primary peer-checked:bg-primary transition-colors"></div>
+              <lucide-icon
+                [img]="CircleIcon"
+                class="absolute inset-0 h-5 w-5 text-primary-foreground opacity-0 peer-checked:opacity-100 transition-opacity"
+                aria-hidden="true"
+              />
+            </div>
+            <span class="text-sm text-foreground">{{ option.label }}</span>
+          </div>
+        }
+
+        @if (option.disabled) {
+          <span class="ml-2 text-xs text-muted-foreground">(disabled)</span>
+        }
+      </label>
+    }
+  </div>
+
+  @if (hint()) {
+    <p [id]="hintId" class="mt-1.5 text-sm text-muted-foreground">
+      {{ hint() }}
+    </p>
+  }
+</div>

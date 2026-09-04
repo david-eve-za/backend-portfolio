@@ -1,0 +1,36 @@
+<div class="flex items-start gap-3" [class.flex-row-reverse]="labelPosition() === 'left'">
+  <label [for]="id()" class="relative flex items-center cursor-pointer">
+    <input
+      [id]="id()"
+      [name]="name()"
+      type="checkbox"
+      [checked]="value()"
+      [disabled]="disabled()"
+      [required]="required()"
+      [indeterminate]="indeterminate()"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-describedby]="describedBy()"
+      [attr.aria-required]="required()"
+      class="peer h-4 w-4 shrink-0 rounded-sm border-border text-primary
+             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+             disabled:opacity-50 disabled:cursor-not-allowed
+             data-[indeterminate]:bg-primary data-[indeterminate]:text-primary-foreground
+             data-[indeterminate]:border-primary"
+      (change)="onChange($event)"
+    />
+    @if (indeterminate()) {
+      <lucide-icon [img]="CheckIcon" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary-foreground" aria-hidden="true" />
+    }
+  </label>
+
+  @if (label() || hint()) {
+    <div class="flex-1 min-w-0">
+      @if (label()) {
+        <span class="block text-sm font-medium text-foreground">{{ label() }}</span>
+      }
+      @if (hint()) {
+        <p [id]="hintId" class="mt-0.5 text-sm text-muted-foreground">{{ hint() }}</p>
+      }
+    </div>
+  }
+</div>

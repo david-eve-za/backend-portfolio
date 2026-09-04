@@ -1,0 +1,126 @@
+<div class="relative inline-block w-full" [class]="dropdownClasses()">
+  <button
+    #trigger
+    type="button"
+    [id]="dropdownId + '-trigger'"
+    [disabled]="disabled()"
+    [attr.aria-haspopup]="listbox"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="dropdownId + '-menu'"
+    [attr.aria-label]="ariaLabel()"
+    [class]="triggerClasses()"
+    (click)="trigger() === 'click' && toggle()"
+    (mouseenter)="trigger() === 'hover' && !disabled() && (isOpen.set(true), openChange.emit(true))"
+    (mouseleave)="trigger() === 'hover' && (isOpen.set(false), openChange.emit(false))"
+  >
+    <span class="flex-1 text-left truncate">
+      @if (multiple()) {
+        @if (selectedItems().length > 0) {
+          <span class="flex flex-wrap gap-1">
+            @for (val of selectedItems(); track val) {
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-muted rounded-full">
+                {{ getItemLabel(val) }}
+                <button
+                  type="button"
+                  class="p-0.5 hover:bg-muted-foreground/20 rounded"
+                  (click)="$event.stopPropagation(); removeItem(val)"
+                  [attr.aria-label]="'Remove ' + getItemLabel(val)"
+                >
+                  <lucide-icon [img]="XIcon" class="h-3 w-3" aria-hidden="true" />
+                </button>
+              </span>
+            }
+          </span>
+        } @else {
+          <span class="text-muted-foreground">{{ placeholder() }}</span>
+        }
+      } @else {
+        @if (value()) {
+          <span>{{ getItemLabel(value()) }}</span>
+        } @else {
+          <span class="text-muted-foreground">{{ placeholder() }}</span>
+        }
+      }
+    </span>
+
+    @if (showClear()) {
+      <button
+        type="button"
+        class="p-1 text-muted-foreground hover:text-foreground transition-colors"
+        (click)="$event.stopPropagation(); clearValue()"
+        [attr.aria-label]="'Clear ' + (placeholder() || 'selection')"
+      >
+        <lucide-icon [img]="XIcon" class="h-4 w-4" aria-hidden="true" />
+      </button>
+    }
+
+    <lucide-icon
+      [img]="isOpen() ? ChevronUpIcon : ChevronDownIcon"
+      class="h-4 w-4 text-muted-foreground transition-transform duration-200 flex-shrink-0"
+      aria-hidden="true"
+    />
+  </button>
+
+  @if (isOpen()) {
+    <div
+      #menu
+      [id]="dropdownId + '-menu'"
+      role="listbox"
+      [attr.aria-multiselectable]="multiple()"
+      [attr.aria-label]="ariaLabel()"
+      class="absolute z-[100] mt-1 w-full max-h-[var(--max-height,200px)] overflow-y-auto bg-surface border border-border rounded-md shadow-lg"
+      [style.max-height]="maxHeight()"
+      (mouseenter)="trigger() === 'hover' && (isOpen.set(true), openChange.emit(true))"
+      (mouseleave)="trigger() === 'hover' && (isOpen.set(false), openChange.emit(false))"
+    >
+      @if (searchable()) {
+        <div class="p-2 border-b border-border sticky top-0 z-10 bg-surface">
+          <div class="relative">
+            <lucide-icon [img]="Search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              class="w-full pl-10 pr-4 py-2 text-sm bg-background border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="Search..."
+              [value]="searchQuery()"
+              (input)="onSearchInput($event)"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+      }
+
+      @for (item of filteredItems(); track item.value) {
+        @if (item.divider) {
+          <div class="border-t border-border my-1" role="separator"></div>
+        } @else {
+          <button
+            type="button"
+            role="option"
+            [attr.aria-selected]="isSelected(item)"
+            [attr.aria-disabled]="item.disabled"
+            [disabled]="item.disabled"
+            [class]="itemClasses(item)"
+            (click)="selectItem(item)"
+            class="w-full px-3 py-2 text-left text-sm transition-colors"
+          >
+            <span class="flex items-center gap-2">
+              @if (item.icon) {
+                <lucide-icon [img]="item.icon" class="h-4 w-4" aria-hidden="true" />
+              }
+              <span>{{ item.label }}</span>
+              @if (multiple() && isSelected(item)) {
+                <lucide-icon [img]="CheckIcon" class="h-4 w-4 ml-auto text-primary" aria-hidden="true" />
+              }
+            </span>
+          </button>
+        }
+      }
+
+      @if (filteredItems().length === 0 && searchable()) {
+        <div class="px-3 py-4 text-center text-sm text-muted-foreground">
+          No options found
+        </div>
+      }
+    </div>
+  }
+</div>

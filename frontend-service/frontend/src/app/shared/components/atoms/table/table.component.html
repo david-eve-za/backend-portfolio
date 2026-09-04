@@ -1,0 +1,135 @@
+<div class="w-full overflow-x-auto">
+  <table class="w-full border-collapse" [class]="tableClasses()">
+    <thead>
+      <tr class="border-b border-border bg-muted/50">
+        @if (selectable()) {
+          <th class="px-4 py-3 text-left">
+            <label class="flex items-center justify-center">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                [indeterminate]="someSelected()"
+                (change)="toggleAll()"
+                class="h-4 w-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <span class="sr-only">Select all</span>
+            </label>
+          </th>
+        }
+        @for (column of columns(); track column.key) {
+          <th
+            [style.width]="column.width"
+            [class]="thClasses(column)"
+            (click)="column.sortable && sort(column.key)"
+            [attr.aria-sort]="sortColumn() === column.key ? (sortDirection() === 'asc' ? 'ascending' : 'descending') : 'none'"
+          >
+            <div class="flex items-center gap-1">
+              <span>{{ column.header }}</span>
+              @if (column.sortable) {
+                <lucide-icon
+                  [img]="sortColumn() === column.key ? (sortDirection() === 'asc' ? ChevronUpIcon : ChevronDownIcon) : null"
+                  class="h-4 w-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              }
+            </div>
+          </th>
+        }
+        @if (actions().length > 0) {
+          <th class="px-4 py-3 text-left">Actions</th>
+        }
+      </tr>
+    </thead>
+
+    <tbody>
+      @if (loading()) {
+        <tr>
+          <td [attr.colspan]="columns().length + (selectable() ? 1 : 0) + (actions().length > 0 ? 1 : 0)" class="px-4 py-8 text-center text-muted-foreground">
+            <bt-spinner type="dots" [label]="'Loading'" />
+          </td>
+        </tr>
+      } @else if (data().length === 0) {
+        <tr>
+          <td [attr.colspan]="columns().length + (selectable() ? 1 : 0) + (actions().length > 0 ? 1 : 0)" class="px-4 py-8 text-center text-muted-foreground">
+            {{ emptyMessage() }}
+          </td>
+        </tr>
+      } @else {
+        @for (row of paginatedData(); track row; let i = $index) {
+          <tr [class]="trClasses(i)" (click)="onRowClick(row)">
+            @if (selectable()) {
+              <td class="px-4 py-3">
+                <label class="flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(row)"
+                    (change)="$event.stopPropagation(); toggleRow(row)"
+                    class="h-4 w-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <span class="sr-only">Select row</span>
+                </label>
+              </td>
+            }
+            @for (column of columns(); track column.key) {
+              <td [class]="tdClasses(column)">
+                @if (column.render) {
+                  {{ column.render(row) }}
+                } @else {
+                  {{ getValue(row, column.key) }}
+                }
+              </td>
+            }
+            @if (actions().length > 0) {
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  @for (action of actions(); track action.label) {
+                    <button
+                      type="button"
+                      [class]="actionButtonClasses(action)"
+                      (click)="$event.stopPropagation(); onActionClick(action, row)"
+                      [attr.aria-label]="action.label"
+                    >
+                      @if (action.icon) {
+                        <lucide-icon [img]="action.icon" class="h-4 w-4" aria-hidden="true" />
+                      } @else {
+                        {{ action.label }}
+                      }
+                    </button>
+                  }
+                </div>
+              </td>
+            }
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+
+  @if (showPagination() && totalPages() > 1) {
+    <div class="flex items-center justify-between mt-4 px-4">
+      <div class="text-sm text-muted-foreground">
+        Page {{ currentPage() }} of {{ totalPages() }}
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="p-2 rounded border border-border hover:bg-muted disabled:opacity-50"
+          (click)="prevPage()"
+          [disabled]="currentPage() === 1"
+          aria-label="Previous page"
+        >
+          <lucide-icon [img]="ChevronLeftIcon" class="h-4 w-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="p-2 rounded border border-border hover:bg-muted disabled:opacity-50"
+          (click)="nextPage()"
+          [disabled]="currentPage() === totalPages()"
+          aria-label="Next page"
+        >
+          <lucide-icon [img]="ChevronRightIcon" class="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  }
+</div>

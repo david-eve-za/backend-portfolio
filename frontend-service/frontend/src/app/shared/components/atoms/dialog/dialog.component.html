@@ -1,0 +1,63 @@
+@if (open()) {
+  <div
+    class="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+    (click)="onOverlayClickHandler($event)"
+    role="dialog"
+    [attr.aria-modal]="true"
+    [attr.aria-labelledby]="title() ? 'dialog-title' : null"
+    [attr.aria-describedby]="description() ? 'dialog-description' : (ariaDescribedBy() || null)"
+    [attr.aria-label]="ariaLabel()"
+  >
+    <div
+      #dialog
+      [class]="dialogClasses()"
+      class="w-full animate-in fade-in-0 zoom-in-95 duration-200"
+    >
+      <div class="flex flex-col">
+        @if (title() || showClose()) {
+          <header class="flex items-start justify-between gap-4 p-6 border-b border-border">
+            <div>
+              @if (title()) {
+                <h2 id="dialog-title" class="text-lg font-semibold text-foreground">
+                  {{ title() }}
+                </h2>
+              }
+              @if (description()) {
+                <p id="dialog-description" class="mt-1 text-sm text-muted-foreground">
+                  {{ description() }}
+                </p>
+              }
+            </div>
+            @if (showClose()) {
+              <button
+                type="button"
+                class="p-1 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted"
+                (click)="onCancel()"
+                aria-label="Close"
+              >
+                <lucide-icon [img]="XIcon" class="h-4 w-4" aria-hidden="true" />
+              </button>
+            }
+          </header>
+        }
+
+        <div class="p-6">
+          <ng-content />
+        </div>
+
+        @if (variant() === 'confirm' || variant() === 'alert') {
+          <footer class="flex justify-end gap-3 p-6 border-t border-border">
+            <bt-button variant="ghost" (clicked)="onCancel()">
+              Cancel
+            </bt-button>
+            <bt-button
+              variant="variant() === 'alert' ? 'destructive' : 'primary'"
+              (clicked)="onConfirm()"
+            >
+              {{ variant() === 'alert' ? 'Delete' : 'Confirm' }}
+            </bt-button>
+          </footer>
+        }
+      </div>
+    </div>
+  </div>

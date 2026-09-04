@@ -1,0 +1,59 @@
+<div class="flex items-center gap-3">
+  @if (type() === 'switch') {
+    <label [for]="id()" class="relative inline-flex items-center cursor-pointer">
+      <input
+        [id]="id()"
+        [name]="name()"
+        type="checkbox"
+        [checked]="value()"
+        [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-label]="ariaLabel()"
+        class="peer sr-only"
+        (change)="onChange($event)"
+      />
+      <div
+        [class]="switchClasses()"
+        class="relative rounded-full border-2 border-border bg-muted
+               transition-colors duration-200
+               peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2
+               peer-checked:border-primary peer-checked:bg-primary
+               disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span
+          [class]="thumbClasses()"
+          class="absolute top-0.5 left-0.5 bg-white rounded-full shadow-sm
+                 transition-transform duration-200
+                 peer-checked:translate-x-full"
+        ></span>
+      </div>
+    </label>
+  } @else {
+    <label [for]="id()" class="relative inline-flex items-center cursor-pointer">
+      <input
+        [id]="id()"
+        [name]="name()"
+        type="checkbox"
+        [checked]="value()"
+        [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-label]="ariaLabel()"
+        class="peer h-4 w-4 shrink-0 rounded-sm border-border text-primary
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+               disabled:opacity-50 disabled:cursor-not-allowed"
+        (change)="onChange($event)"
+      />
+    </label>
+  }
+
+  @if (label() || hint()) {
+    <div class="flex-1 min-w-0">
+      @if (label()) {
+        <span class="block text-sm font-medium text-foreground">{{ label() }}</span>
+      }
+      @if (hint()) {
+        <p class="mt-0.5 text-sm text-muted-foreground">{{ hint() }}</p>
+      }
+    </div>
+  }
+</div>

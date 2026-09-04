@@ -1,0 +1,45 @@
+<div
+  [class]="containerClasses()"
+  [role]="indeterminate() ? 'progressbar' : 'progressbar'"
+  [attr.aria-valuenow]="indeterminate() ? null : percentage()"
+  [attr.aria-valuemin]="0"
+  [attr.aria-valuemax]="max()"
+  [attr.aria-label]="ariaLabel()"
+>
+  @if (indeterminate()) {
+    <div
+      class="absolute inset-0 bg-current/30 animate-pulse"
+      aria-hidden="true"
+    ></div>
+    <div
+      class="absolute left-0 top-0 h-full w-1/4 bg-current animate-[shimmer_1.5s_infinite]"
+      aria-hidden="true"
+    ></div>
+  } @else {
+    <div
+      [class]="progressClasses()"
+      [style.width.%]="percentage()"
+      class="h-full rounded-full transition-all duration-300 ease-out"
+      [attr.aria-hidden]="true"
+    >
+      @if (showLabel() && labelPosition() === 'inside' && percentage() > 15) {
+        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-white">
+          {{ percentage() }}%
+        </span>
+      }
+    </div>
+  }
+
+  @if (showLabel() && labelPosition() === 'outside') {
+    <div class="mt-1 text-xs text-muted-foreground text-right">
+      {{ percentage() }}% {{ max() > 100 ? '(' + value() + '/' + max() + ')' : '' }}
+    </div>
+  }
+</div>
+
+<style>
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+</style>

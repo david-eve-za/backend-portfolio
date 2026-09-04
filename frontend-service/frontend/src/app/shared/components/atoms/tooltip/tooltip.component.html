@@ -1,0 +1,8 @@
+<ng-content />
+
+@if (isVisible()) {
+  <div [class]="tooltipClasses()" role="tooltip" [attr.aria-label]="content()">
+    {{ content() }}
+    <div [class]="arrowClasses()"></div>
+  </div>
+}
