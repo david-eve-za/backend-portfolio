@@ -1,0 +1,25 @@
+<bt-table
+  [columns]="columns()"
+  [data]="projects()"
+  [selectable]="true"
+  [striped]="true"
+  [hoverable]="true"
+  [loading]="loading()"
+  [actions]="actions()"
+  (rowClick)="onRowClick($event)"
+  (actionClick)="onActionClick($event)"
+>
+  <ng-template #empty>
+    <div class="flex flex-col items-center justify-center py-16 px-4">
+      <lucide-icon [img]="FolderOpenIcon" class="h-16 w-16 text-muted-foreground/50 mb-4" aria-hidden="true" />
+      <h3 class="text-lg font-medium text-foreground mb-2">No projects yet</h3>
+      <p class="text-muted-foreground text-center max-w-md mb-6">
+        Start your first translation project by uploading a book in PDF or EPUB format.
+      </p>
+      <bt-button variant="primary" size="lg" (clicked)="createProject.emit()">
+        <lucide-icon [img]="PlusIcon" class="h-4 w-4 mr-2" aria-hidden="true" />
+        Create Your First Project
+      </bt-button>
+    </div>
+  </ng-template>
+</bt-table>

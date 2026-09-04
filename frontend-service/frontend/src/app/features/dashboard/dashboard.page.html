@@ -1,0 +1,130 @@
+<bt-dashboard-layout>
+  <!-- Header Slot -->
+  <div slot="header" class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <h1 class="text-2xl font-bold text-foreground">Dashboard</h1>
+      <div class="flex items-center gap-2 ml-4">
+        <bt-select
+          [value]="filter()"
+          [options]="filterOptions"
+          [placeholder]="'All Projects'"
+          (valueChange)="onFilterChange($event)"
+          class="w-48"
+        />
+        <div class="relative">
+          <lucide-icon [img]="SearchIcon" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <input
+            type="text"
+            [value]="searchQuery()"
+            (input)="onSearchChange($any($event.target).value)"
+            placeholder="Search projects..."
+            class="pl-10 pr-4 py-2 text-sm bg-surface border border-border rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-64"
+            placeholder="Search projects..."
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <bt-select
+          [value]="sortBy()"
+          [options]="sortOptions"
+          (valueChange)="onSortChange($event)"
+          class="w-40"
+        />
+        <button
+          type="button"
+          class="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          (click)="sortDirection.update(d => d === 'asc' ? 'desc' : 'asc')"
+          aria-label="Toggle sort direction"
+        >
+          @if (sortDirection() === 'asc') {
+            <lucide-icon [img]="ChevronUpIcon" class="h-4 w-4" aria-hidden="true" />
+          } @else {
+            <lucide-icon [img]="ChevronDownIcon" class="h-4 w-4" aria-hidden="true" />
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content: Project Table -->
+    <div slot="main" class="space-y-6">
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Total Projects</p>
+              <p class="text-2xl font-bold text-foreground">{{ statusCounts().all }}</p>
+            </div>
+            <lucide-icon [img]="LayoutDashboardIcon" class="h-8 w-8 text-muted-foreground/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Translating</p>
+              <p class="text-2xl font-bold text-primary">{{ statusCounts().translating }}</p>
+            </div>
+            <lucide-icon [img]="ClockIcon" class="h-8 w-8 text-primary/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Glossary Review</p>
+              <p class="text-2xl font-bold text-warning">{{ statusCounts()['glossary-review'] }}</p>
+            </div>
+            <lucide-icon [img]="AlertCircleIcon" class="h-8 w-8 text-warning/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Audio Generating</p>
+              <p class="text-2xl font-bold text-purple-600">{{ statusCounts()['audio-generating'] }}</p>
+            </div>
+            <lucide-icon [img]="FolderOpenIcon" class="h-8 w-8 text-purple-600/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Completed</p>
+              <p class="text-2xl font-bold text-success">{{ statusCounts().completed }}</p>
+            </div>
+            <lucide-icon [img]="CheckCircleIcon" class="h-8 w-8 text-success/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+        <bt-card class="p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-muted-foreground">Archived</p>
+              <p class="text-2xl font-bold text-muted-foreground">{{ statusCounts().archived }}</p>
+            </div>
+            <lucide-icon [img]="ArchiveIcon" class="h-8 w-8 text-muted-foreground/50" aria-hidden="true" />
+          </div>
+        </bt-card>
+      </div>
+
+      <!-- Project Table -->
+      <bt-project-table
+        [projects]="filteredProjects()"
+        [loading]="loading()"
+        [getStatusIcon]="getStatusIcon"
+        [getStatusBadgeClass]="getStatusBadgeClass"
+        [getStatusLabel]="getStatusLabel"
+        [formatDate]="formatDate"
+        [formatNumber]="formatNumber"
+        (rowClick)="onProjectClick($event)"
+      />
+    </div>
+
+    <!-- Queue Panel Slot -->
+    <div slot="queue-panel">
+      <bt-queue-panel
+        [jobs]="queueJobs()"
+        [paused]="queuePaused()"
+        [activeCount]="activeJobsCount()"
+      />
+    </div>
+  </bt-dashboard-layout>
