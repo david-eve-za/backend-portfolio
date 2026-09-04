@@ -31,7 +31,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = {"spring.cloud.config.enabled=false"})
+@TestPropertySource(properties = {
+    "spring.cloud.config.enabled=false",
+    "security.rate-limit.capacity=1000",
+    "security.rate-limit.refill-tokens=1000",
+    "security.rate-limit.refill-duration=1s"
+})
 public class UserControllerTest {
 
     @Autowired

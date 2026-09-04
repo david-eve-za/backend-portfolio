@@ -1,11 +1,10 @@
-package gon.cue.security.config;
+package gon.cue.security.initialization;
 
 import gon.cue.security.model.Role;
 import gon.cue.security.model.User;
 import gon.cue.security.repository.RoleRepository;
 import gon.cue.security.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -14,14 +13,13 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-public class DataInitializer implements CommandLineRunner {
+public class DefaultDataLoader {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Override
-    public void run(String... args) {
+    public void loadDefaultData() {
         // Create roles if they don't exist
         Role userRole = roleRepository.findByName("ROLE_USER").orElseGet(() -> {
             Role newUserRole = new Role(null, "ROLE_USER");

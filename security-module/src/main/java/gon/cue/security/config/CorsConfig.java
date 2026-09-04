@@ -1,5 +1,6 @@
 package gon.cue.security.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -9,15 +10,20 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class CorsConfig {
+
+    private final SecurityProperties securityProperties;
 
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:8080", "http://localhost:8083"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        SecurityProperties.CorsProperties cors = securityProperties.getCors();
+
+        config.setAllowedOrigins(cors.getAllowedOrigins());
+        config.setAllowedMethods(cors.getAllowedMethods());
+        config.setAllowedHeaders(cors.getAllowedHeaders());
+        config.setAllowCredentials(cors.isAllowCredentials());
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
