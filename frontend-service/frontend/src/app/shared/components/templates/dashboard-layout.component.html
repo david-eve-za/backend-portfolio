@@ -1,0 +1,182 @@
+<div class="bt-dashboard-layout min-h-screen bg-background flex">
+  <!-- Sidebar -->
+  <aside
+    [class]="sidebarClasses()"
+    class="fixed left-0 top-0 z-40 h-screen bg-surface border-r border-border transition-all duration-300 flex flex-col"
+    [style.width]="sidebarWidth()"
+  >
+    <!-- Logo/Brand -->
+    <div class="flex items-center justify-between h-16 px-4 border-b border-border">
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold text-foreground">BookTranslator</span>
+      </div>
+      @if (!sidebarCollapsed()) {
+        <button
+          type="button"
+          class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          (click)="toggleSidebarCollapse()"
+          aria-label="Collapse sidebar"
+        >
+          <lucide-icon [img]="ChevronLeftIcon" class="h-4 w-4" aria-hidden="true" />
+        </button>
+      }
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto p-3 space-y-1" role="navigation" aria-label="Main navigation">
+      @for (item of navItems(); track item.id) {
+        <button
+          type="button"
+          [class]="navItemClasses(item)"
+          (click)="setActiveNav(item.id)"
+          [attr.aria-current]="activeNav() === item.id ? 'page' : undefined"
+        >
+          <lucide-icon [img]="item.icon" class="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+          @if (!sidebarCollapsed()) {
+            <span class="flex-1 text-left truncate font-medium">{{ item.label }}</span>
+            @if (item.count !== undefined && item.count > 0) {
+              <span
+                class="flex items-center justify-center min-w-5 h-5 px-1.5 py-0.5 text-xs font-medium rounded-full"
+                [class]="item.badgeColor || 'bg-muted text-muted-foreground'"
+              >
+                {{ item.count }}
+              </span>
+            }
+          }
+        </button>
+      }
+    </nav>
+
+    <!-- Create Project Button -->
+    @if (!sidebarCollapsed()) {
+      <div class="p-3 border-t border-border">
+        <button
+          type="button"
+          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary-hover transition-colors"
+        >
+          <lucide-icon [img]="LayoutDashboardIcon" class="h-4 w-4" aria-hidden="true" />
+          <span>New Project</span>
+        </button>
+      </div>
+    }
+
+    <!-- Footer -->
+    @if (!sidebarCollapsed()) {
+      <div class="p-3 border-t border-border">
+        <div class="flex items-center gap-3 px-2">
+          <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+            U
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-foreground truncate">User Name</p>
+            <p class="text-xs text-muted-foreground truncate">user@example.com</p>
+          </div>
+        </div>
+      </div>
+    }
+  </aside>
+
+  <!-- Sidebar Toggle (Mobile) -->
+  @if (!sidebarOpen()) {
+    <button
+      type="button"
+      class="fixed left-4 top-4 z-50 p-2 rounded-md bg-surface border border-border shadow-lg"
+      (click)="sidebarOpen.set(true)"
+      aria-label="Open sidebar"
+    >
+      <lucide-icon [img]="MenuIcon" class="h-5 w-5" aria-hidden="true" />
+    </button>
+  }
+
+  <!-- Main Content -->
+  <main
+    [class]="mainClasses()"
+    class="flex-1 min-h-screen bg-background transition-all duration-300"
+  >
+    <!-- Header -->
+    <header class="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-sm border-b border-border flex items-center justify-between px-6">
+      <div class="flex items-center gap-4">
+        @if (sidebarOpen()) {
+          <button
+            type="button"
+            class="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors lg:hidden"
+            (click)="sidebarOpen.set(false)"
+            aria-label="Close sidebar"
+          >
+            <lucide-icon [img]="XIcon" class="h-5 w-5" aria-hidden="true" />
+          </button>
+        }
+        <h1 class="text-xl font-semibold text-foreground">Dashboard</h1>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          class="relative p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Notifications"
+        >
+          <lucide-icon [img]="BellIcon" class="h-5 w-5" aria-hidden="true" />
+          <span class="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
+        </button>
+
+        <div class="flex items-center gap-3 pl-4 border-l border-border">
+          <button
+            type="button"
+            class="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Settings"
+          >
+            <lucide-icon [img]="SettingsIcon" class="h-5 w-5" aria-hidden="true" />
+          </button>
+          <div class="hidden sm:flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
+              U
+            </div>
+            <button
+              type="button"
+              class="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="User menu"
+            >
+              <lucide-icon [img]="LogOutIcon" class="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="p-6">
+      <ng-content select="[slot=main]" />
+    </div>
+
+    <!-- Queue Panel (Right) -->
+    <aside
+      [class]="queuePanelClasses()"
+      class="fixed right-0 top-16 z-40 h-[calc(100vh-4rem)] bg-surface border-l border-border transition-all duration-300 flex flex-col"
+      [style.width]="queuePanelWidth()"
+    >
+      <div class="flex items-center justify-between h-12 px-4 border-b border-border">
+        <h2 class="text-sm font-semibold text-foreground">Queue</h2>
+        <button
+          type="button"
+          class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          (click)="queuePanelOpen.set(false)"
+          aria-label="Close queue panel"
+        >
+          <lucide-icon [img]="XIcon" class="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 space-y-2">
+        <ng-content select="[slot=queue-panel]" />
+      </div>
+    </aside>
+  </main>
+
+  <!-- Mobile Overlay -->
+  @if (sidebarOpen()) {
+    <div
+      class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+      (click)="sidebarOpen.set(false)"
+      aria-hidden="true"
+    ></div>
+  }
+</div>

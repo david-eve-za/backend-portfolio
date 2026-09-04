@@ -1,0 +1,105 @@
+<div class="bt-wizard-layout min-h-screen bg-background flex flex-col">
+  <!-- Progress Header -->
+  <header class="bg-surface border-b border-border">
+    <div class="max-w-4xl mx-auto px-6 py-4">
+      <!-- Progress Bar -->
+      <div class="mb-6">
+        <div class="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div
+            class="h-full bg-primary transition-all duration-300 ease-out"
+            [style.width.%]="progress()"
+          ></div>
+        </div>
+        <!-- Step Indicators -->
+        <div class="flex items-center justify-between">
+          @for (step of steps(); track step.id; let i = $index) {
+            <div class="flex flex-col items-center relative">
+              <div
+                class="flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300"
+                [class]="stepIndicatorClasses(step)"
+              >
+                @if (isStepCompleted(step)) {
+                  <lucide-icon [img]="CheckIcon" class="h-5 w-5 text-primary-foreground" aria-hidden="true" />
+                } @else if (isStepCurrent(step)) {
+                  <lucide-icon [img]="LoaderIcon" class="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+                } @else {
+                  @if (showStepNumbers()) {
+                    <span class="text-sm font-medium">{{ i + 1 }}</span>
+                  } @else if (step.icon) {
+                    <lucide-icon [img]="step.icon" class="h-5 w-5" aria-hidden="true" />
+                  }
+                }
+              </div>
+              @if (!step.optional) {
+                <span class="mt-1.5 text-xs font-medium text-center text-muted-foreground truncate max-w-[100px]">
+                  {{ step.label }}
+                </span>
+              } @else {
+                <span class="mt-1.5 text-xs text-center text-muted-foreground/60 truncate max-w-[100px]">
+                  {{ step.label }} (optional)
+                </span>
+              }
+
+              @if (i < steps().length - 1) {
+                <div
+                  class="absolute top-5 left-[calc(50%+5px)] right-[calc(50%+5px)] h-0.5 bg-muted"
+                  [style.background-color]="isStepCompleted(steps()[i]) ? 'var(--color-primary)' : 'var(--color-border)'"
+                ></div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-4xl mx-auto w-full px-6 py-8">
+    <div class="bg-surface rounded-lg border border-border p-6 md:p-8">
+      <ng-content select="[slot=content]" />
+    </div>
+  </main>
+
+  <!-- Footer Actions -->
+  <footer class="bg-surface border-t border-border">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-end gap-3">
+      @if (!isFirstStep()) {
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-medium text-foreground bg-surface border border-border rounded-md hover:bg-muted transition-colors"
+          (click)="goBack.emit()"
+          [disabled]="!canGoBack()"
+        >
+          <lucide-icon [img]="ChevronLeftIcon" class="h-4 w-4 mr-2" aria-hidden="true" />
+          Back
+        </button>
+      }
+
+      @if (isLastStep()) {
+        <button
+          type="button"
+          class="px-6 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary-hover transition-colors"
+          (click)="finish.emit()"
+          [disabled]="isLoading()"
+        >
+          @if (isLoading()) {
+            <lucide-icon [img]="LoaderIcon" class="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+            Processing...
+          } @else {
+            Finish
+          }
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="px-6 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary-hover transition-colors"
+          (click)="goNext.emit()"
+          [disabled]="!canGoNext() || isLoading()"
+        >
+          Next
+          <lucide-icon [img]="ChevronRightIcon" class="h-4 w-4 ml-2" aria-hidden="true" />
+        </button>
+      }
+    </div>
+  </footer>
+</div>
