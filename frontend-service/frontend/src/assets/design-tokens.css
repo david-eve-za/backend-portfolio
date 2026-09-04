@@ -1,0 +1,219 @@
+/* === DESIGN TOKENS - CSS Custom Properties === */
+/* Source of truth for all design tokens. Matches tailwind.config.js */
+/* Import this in styles.css BEFORE @tailwind base */
+
+:root {
+  /* === PRIMITIVE COLOR TOKENS === */
+
+  /* Teal Scale (Primary) */
+  --color-teal-50:  #F0FDFA;
+  --color-teal-100: #CCFBF1;
+  --color-teal-200: #99F6E4;
+  --color-teal-300: #5EEAD4;
+  --color-teal-400: #2DD4BF;
+  --color-teal-500: #14B8A6;  /* Secondary */
+  --color-teal-600: #0D9488;  /* Primary */
+  --color-teal-700: #0F766E;
+  --color-teal-800: #115E59;
+  --color-teal-900: #134E4A;  /* Foreground */
+  --color-teal-950: #042F2E;
+
+  /* Orange Scale (Accent/CTA) */
+  --color-orange-50:  #FFF7ED;
+  --color-orange-100: #FFEDD5;
+  --color-orange-200: #FED7AA;
+  --color-orange-300: #FDBA74;
+  --color-orange-400: #FB923C;
+  --color-orange-500: #F97316;
+  --color-orange-600: #EA580C;  /* Accent */
+  --color-orange-700: #C2410C;
+  --color-orange-800: #9A3412;
+  --color-orange-900: #7C2D12;
+
+  /* Neutral Scale */
+  --color-neutral-0:    #FFFFFF;
+  --color-neutral-50:   #F8FAFC;
+  --color-neutral-100:  #F1F5F9;
+  --color-neutral-200:  #E2E8F0;
+  --color-neutral-300:  #CBD5E1;
+  --color-neutral-400:  #94A3B8;
+  --color-neutral-500:  #64748B;
+  --color-neutral-600:  #475569;  /* Muted Foreground */
+  --color-neutral-700:  #334155;
+  --color-neutral-800:  #1E293B;
+  --color-neutral-900:  #0F172A;
+  --color-neutral-950:  #020617;
+
+  /* Semantic Status Colors */
+  --color-success:      #16A34A;
+  --color-success-bg:   #F0FDF4;
+  --color-warning:      #D97706;
+  --color-warning-bg:   #FFFBEB;
+  --color-error:        #DC2626;
+  --color-error-bg:     #FEF2F2;
+  --color-info:         #2563EB;
+  --color-info-bg:      #EFF6FF;
+
+  /* === SEMANTIC COLOR TOKENS (Component-facing) === */
+
+  /* Primary - Teal */
+  --color-primary:           var(--color-teal-600);
+  --color-primary-hover:     var(--color-teal-700);
+  --color-primary-active:    var(--color-teal-800);
+  --color-primary-foreground: var(--color-neutral-0);
+
+  /* Secondary - Teal 500 */
+  --color-secondary:           var(--color-teal-500);
+  --color-secondary-hover:     var(--color-teal-600);
+  --color-secondary-foreground: var(--color-neutral-900);
+
+  /* Accent - Orange */
+  --color-accent:           var(--color-orange-600);
+  --color-accent-hover:     var(--color-orange-700);
+  --color-accent-active:    var(--color-orange-800);
+  --color-accent-foreground: var(--color-neutral-0);
+
+  /* Background & Surface */
+  --color-background:       var(--color-neutral-50);
+  --color-surface:          var(--color-neutral-0);
+  --color-surface-elevated: var(--color-neutral-0);
+  --color-foreground:       var(--color-neutral-900);
+
+  /* Muted */
+  --color-muted:            var(--color-neutral-100);
+  --color-muted-foreground: var(--color-neutral-500);
+
+  /* Border */
+  --color-border:           var(--color-neutral-200);
+  --color-border-focus:     var(--color-teal-600);
+
+  /* Ring */
+  --color-ring:             var(--color-teal-600);
+
+  /* Destructive */
+  --color-destructive:      var(--color-error);
+  --color-destructive-hover: var(--color-error);
+  --color-destructive-foreground: var(--color-neutral-0);
+
+  /* Status Colors (Semantic) */
+  --color-success:          var(--color-success);
+  --color-success-bg:       var(--color-success-bg);
+  --color-warning:          var(--color-warning);
+  --color-warning-bg:       var(--color-warning-bg);
+  --color-error:            var(--color-error);
+  --color-error-bg:         var(--color-error-bg);
+  --color-info:             var(--color-info);
+  --color-info-bg:          var(--color-info-bg);
+
+  /* === SPACING TOKENS (4px base) === */
+  --space-0:   0;
+  --space-1:   0.25rem;  /* 4px */
+  --space-2:   0.5rem;   /* 8px */
+  --space-3:   0.75rem;  /* 12px */
+  --space-4:   1rem;     /* 16px */
+  --space-5:   1.25rem;  /* 20px */
+  --space-6:   1.5rem;   /* 24px */
+  --space-8:   2rem;     /* 32px */
+  --space-10:  2.5rem;   /* 40px */
+  --space-12:  3rem;     /* 48px */
+  --space-16:  4rem;     /* 64px */
+  --space-20:  5rem;     /* 80px */
+  --space-24:  6rem;     /* 96px */
+
+  /* === BORDER RADIUS === */
+  --radius-none:   0;
+  --radius-sm:     0.25rem;  /* 4px */
+  --radius-md:     0.375rem; /* 6px */
+  --radius-lg:     0.5rem;   /* 8px */
+  --radius-xl:     0.75rem;  /* 12px */
+  --radius-2xl:    1rem;     /* 16px */
+  --radius-full:   9999px;
+
+  /* === SHADOWS === */
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:  0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* === TRANSITIONS === */
+  --transition-fast:    150ms ease;
+  --transition-normal:  200ms ease;
+  --transition-slow:    300ms ease;
+
+  /* === Z-INDEX SCALE === */
+  --z-dropdown:        100;
+  --z-sticky:          200;
+  --z-fixed:           300;
+  --z-modal-backdrop:  400;
+  --z-modal:           500;
+  --z-popover:         600;
+  --z-tooltip:         700;
+  --z-toaster:         800;
+
+  /* === TYPOGRAPHY === */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type Scale */
+  --text-xs:      0.75rem;    /* 12px - Labels, captions */
+  --text-sm:      0.875rem;   /* 14px - Body small, secondary */
+  --text-base:    1rem;       /* 16px - Body default */
+  --text-lg:      1.125rem;   /* 18px - Body large */
+  --text-xl:      1.25rem;    /* 20px - Subheadings */
+  --text-2xl:     1.5rem;     /* 24px - Section headings */
+  --text-3xl:     1.875rem;   /* 30px - Page titles */
+  --text-4xl:     2.25rem;    /* 36px - Hero titles */
+
+  /* Font Weights */
+  --font-light:    300;
+  --font-normal:   400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+
+  /* Line Heights */
+  --leading-tight:   1.25;  /* Headings */
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;   /* Body */
+  --leading-relaxed: 1.625; /* Long-form reading */
+
+  /* Letter Spacing */
+  --tracking-tight: -0.02em;  /* Headings */
+  --tracking-normal: 0;       /* Body */
+  --tracking-wide:  0.02em;   /* Labels, uppercase */
+}
+
+/* === DARK MODE OVERRIDES === */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Background & Surface */
+    --color-background:       var(--color-neutral-950);
+    --color-surface:          var(--color-neutral-900);
+    --color-surface-elevated: var(--color-neutral-800);
+    --color-foreground:       var(--color-neutral-50);
+
+    /* Muted */
+    --color-muted:            var(--color-neutral-800);
+    --color-muted-foreground: var(--color-neutral-400);
+
+    /* Border */
+    --color-border:           var(--color-neutral-700);
+
+    /* Primary adjustments for dark mode */
+    --color-primary-hover:    var(--color-teal-500);
+    --color-primary-active:   var(--color-teal-400);
+
+    /* Status backgrounds for dark mode */
+    --color-success-bg:       #052E16;
+    --color-warning-bg:       #3F2B00;
+    --color-error-bg:         #3F0A0A;
+    --color-info-bg:          #0C1A3A;
+  }
+}
+
+/* === BREAKPOINTS (for reference - used in Tailwind config) === */
+/* --bp-sm:  640px;   Small tablets */
+/* --bp-md:  768px;   Tablets */
+/* --bp-lg:  1024px;  Laptops */
+/* --bp-xl:  1280px;  Desktops */
+/* --bp-2xl: 1536px;  Large desktops */
