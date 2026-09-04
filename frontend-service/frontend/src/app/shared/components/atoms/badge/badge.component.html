@@ -1,0 +1,11 @@
+<span [class]="variantClasses()" [attr.role]="removable() ? 'button' : undefined" [attr.tabindex]="removable() ? 0 : undefined" (click)="onRemove($event)" (keydown.enter)="onRemove($event)" (keydown.space)="$event.preventDefault(); onRemove($event)">
+  @if (dot()) {
+    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" [style.background-color]="dotColor() || 'currentColor'" aria-hidden="true"></span>
+  }
+  <ng-content />
+  @if (removable()) {
+    <button type="button" class="p-0.5 ml-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors" (click)="onRemove($event)" aria-label="Remove">
+      <lucide-icon [img]="XIcon" class="h-3 w-3" aria-hidden="true" />
+    </button>
+  }
+</span>

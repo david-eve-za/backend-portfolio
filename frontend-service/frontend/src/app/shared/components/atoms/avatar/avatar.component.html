@@ -1,0 +1,21 @@
+<div
+  [class]="avatarClasses()"
+  [attr.aria-label]="name() || alt() || 'Avatar'"
+  role="img"
+>
+  @if (src()) {
+    <img
+      [src]="src()"
+      [alt]="alt() || name() || 'Avatar'"
+      [class]="imageClasses()"
+    />
+  } @else {
+    <div [class]="fallbackClasses()" [style.background-color]="bgColor()">
+      {{ initials() }}
+    </div>
+  }
+
+  @if (status() !== 'none') {
+    <span [class]="statusClasses()" aria-label="{{ status() }}"></span>
+  }
+</div>

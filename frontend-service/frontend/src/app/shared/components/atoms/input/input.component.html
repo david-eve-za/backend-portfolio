@@ -1,0 +1,67 @@
+<div class="w-full">
+  @if (label()) {
+    <label [for]="id()" class="block text-sm font-medium text-foreground mb-1">
+      {{ label() }}
+      @if (required()) {
+        <span class="text-destructive ml-1" aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="relative">
+    @if (type() === 'search' && !showClear()) {
+      <lucide-icon [img]="SearchIcon" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+    }
+
+    <input
+      [id]="id()"
+      [name]="name()"
+      [type]="inputType()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      [required]="required()"
+      [autocomplete]="autocomplete()"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-describedby]="describedBy()"
+      [attr.aria-invalid]="error() ? 'true' : 'false'"
+      [attr.aria-required]="required()"
+      [class]="inputClasses()"
+      (input)="onInput($event)"
+      (blur)="onBlur($event)"
+      (focus)="onFocus($event)"
+      (keydown)="onKeydown($event)"
+    />
+
+    @if (showClear()) {
+      <button
+        type="button"
+        class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+        (click)="clearValue()"
+        [attr.aria-label]="'Clear ' + (label() || 'input')"
+      >
+        <lucide-icon [img]="XIcon" class="h-4 w-4" aria-hidden="true" />
+      </button>
+    } @else if (showPasswordToggle()) {
+      <button
+        type="button"
+        class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+        (click)="togglePasswordVisibility()"
+        [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+      >
+        <lucide-icon [img]="showPassword() ? EyeOffIcon : EyeIcon" class="h-4 w-4" aria-hidden="true" />
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <p id="{{ errorId }}" class="mt-1.5 text-sm text-error" role="alert">
+      {{ error() }}
+    </p>
+  } @else if (hint()) {
+    <p id="{{ hintId }}" class="mt-1.5 text-sm text-muted-foreground">
+      {{ hint() }}
+    </p>
+  }
+</div>

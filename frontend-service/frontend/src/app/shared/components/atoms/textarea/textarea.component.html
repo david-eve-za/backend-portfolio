@@ -1,0 +1,48 @@
+<div class="w-full">
+  @if (label()) {
+    <label [for]="id()" class="block text-sm font-medium text-foreground mb-1">
+      {{ label() }}
+      @if (required()) {
+        <span class="text-destructive ml-1" aria-hidden="true">*</span>
+      }
+    </label>
+  }
+
+  <div class="relative">
+    <textarea
+      [id]="id()"
+      [name]="name()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      [required]="required()"
+      [rows]="rows()"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-describedby]="describedBy()"
+      [attr.aria-invalid]="error() ? 'true' : 'false'"
+      [attr.aria-required]="required()"
+      [attr.maxlength]="maxLength()"
+      [class]="textareaClasses()"
+      (input)="onInput($event)"
+      (blur)="onBlur($event)"
+      (focus)="onFocus($event)"
+    ></textarea>
+
+    @if (showCharCount()) {
+      <div class="absolute bottom-2 right-2 text-xs" [class.text-error]="isAtMax()" [class.text-muted-foreground]="!isAtMax()" id="{{ countId }}" aria-live="polite">
+        {{ charCount() }}@if (maxLength()) { / {{ maxLength() }} }
+      </div>
+    }
+  </div>
+
+  @if (error()) {
+    <p [id]="errorId" class="mt-1.5 text-sm text-error" role="alert">
+      {{ error() }}
+    </p>
+  } @else if (hint()) {
+    <p [id]="hintId" class="mt-1.5 text-sm text-muted-foreground">
+      {{ hint() }}
+    </p>
+  }
+</div>

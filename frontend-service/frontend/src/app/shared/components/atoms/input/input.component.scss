@@ -1,0 +1,23 @@
+// Input component styles are handled via Tailwind classes in the component
+// This file exists for consistency and future custom styles if needed
+
+@layer components {
+  .bt-input-base {
+    @apply w-full px-4 py-2.5 text-base bg-surface border border-border rounded-md
+           text-foreground placeholder:text-muted-foreground
+           transition-all duration-200
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           readonly:bg-muted readonly:cursor-default;
+  }
+
+  .bt-input-base:has(+ .bt-input-clear) {
+    @apply pr-10;
+  }
+
+  .bt-input-clear,
+  .bt-input-password-toggle {
+    @apply absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground
+           hover:text-foreground transition-colors;
+  }
+}
