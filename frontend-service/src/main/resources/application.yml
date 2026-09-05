@@ -9,10 +9,9 @@ server:
 
 eureka:
   client:
+    enabled: false
     service-url:
       defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
   instance:
     prefer-ip-address: true
 
@@ -43,8 +42,11 @@ spring:
 
 eureka:
   client:
+    enabled: true
     service-url:
       defaultZone: http://eureka:password@eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
 
 gateway:
   url: http://api-gateway:8080
