@@ -1,15 +1,10 @@
 package gon.cue.llmservice.config;
 
-import com.google.genai.Client;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.OpenAiEmbeddingOptions;
-import org.springframework.ai.google.genai.GoogleGenAiChatModel;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
@@ -28,7 +23,7 @@ public class SpringAiConfig {
         ProviderConfig.NvidiaConfig nvidia = config.nvidia();
         OpenAiApi api = OpenAiApi.builder()
             .baseUrl("https://integrate.api.nvidia.com")
-            .apiKey(System.getenv("NVIDIA_API_KEY"))
+            .apiKey("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")
             .build();
         return OpenAiChatModel.builder()
             .openAiApi(api)
@@ -37,24 +32,6 @@ public class SpringAiConfig {
                 .temperature(nvidia.temperature())
                 .topP(nvidia.topP())
                 .maxTokens(nvidia.maxOutputTokens())
-                .build())
-            .build();
-    }
-
-    @Bean
-    @Qualifier("geminiChatModel")
-    public ChatModel geminiChatModel(ProviderConfig config) {
-        ProviderConfig.GeminiConfig gemini = config.gemini();
-        Client client = Client.builder()
-            .apiKey(System.getenv("GOOGLE_API_KEY"))
-            .build();
-        return GoogleGenAiChatModel.builder()
-            .genAiClient(client)
-            .defaultOptions(GoogleGenAiChatOptions.builder()
-                .model(gemini.modelNames().get(0))
-                .temperature(gemini.temperature())
-                .topP(gemini.topP())
-                .topK(gemini.topK())
                 .build())
             .build();
     }
@@ -81,24 +58,38 @@ public class SpringAiConfig {
     @Qualifier("nvidiaEmbeddingModel")
     public EmbeddingModel nvidiaEmbeddingModel(ProviderConfig config) {
         ProviderConfig.EmbeddingConfig emb = config.embedding();
-        OpenAiApi api = OpenAiApi.builder()
-            .baseUrl("https://integrate.api.nvidia.com")
-            .apiKey(System.getenv("NVIDIA_API_KEY"))
-            .build();
-        return new OpenAiEmbeddingModel(
-            api,
-            org.springframework.ai.document.MetadataMode.EMBED,
-            OpenAiEmbeddingOptions.builder()
-                .model(emb.modelName())
-                .dimensions(emb.dimensions())
-                .build()
+        return new NvidiaCustomEmbeddingModel(
+            "https://integrate.api.nvidia.com",
+            "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",
+            emb.modelName(),
+            emb.dimensions(),
+            "passage"
+        );
+    }
+
+    @Bean
+    @Qualifier("nvidiaQueryEmbeddingModel")
+    public EmbeddingModel nvidiaQueryEmbeddingModel(ProviderConfig config) {
+        ProviderConfig.EmbeddingConfig emb = config.embedding();
+        return new NvidiaCustomEmbeddingModel(
+            "https://integrate.api.nvidia.com",
+            "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",
+            emb.modelName(),
+            emb.dimensions(),
+            "query"
         );
     }
 
     @Bean
     @Qualifier("nvidiaRerankModel")
     public EmbeddingModel nvidiaRerankModel(ProviderConfig config) {
-        // NVIDIA rerank uses different endpoint - placeholder for now
-        return nvidiaEmbeddingModel(config);
+        ProviderConfig.EmbeddingConfig emb = config.embedding();
+        return new NvidiaCustomEmbeddingModel(
+            "https://integrate.api.nvidia.com",
+            "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",
+            emb.modelName(),
+            emb.dimensions(),
+            "passage"
+        );
     }
 }

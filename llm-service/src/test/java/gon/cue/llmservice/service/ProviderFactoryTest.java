@@ -5,50 +5,107 @@ import gon.cue.llmservice.model.enums.LLMProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@TestPropertySource(properties = {
-    "llm.service.default-provider=NVIDIA",
-    "spring.ai.openai.api-key=test-key",
-    "spring.ai.google.genai.api-key=test-key"
-})
 class ProviderFactoryTest {
-
-    @Autowired
-    private ProviderFactory factory;
 
     @Test
     void shouldReturnNvidiaChatModelByDefault() {
+        ChatModel nvidiaChatModel = mock(ChatModel.class);
+        ChatModel ollamaChatModel = mock(ChatModel.class);
+        EmbeddingModel nvidiaEmbeddingModel = mock(EmbeddingModel.class);
+        EmbeddingModel nvidiaQueryEmbeddingModel = mock(EmbeddingModel.class);
+
+        LlmServiceProperties properties = new LlmServiceProperties(
+            LlmServiceProperties.LLMProvider.NVIDIA,
+            "./tokenizers",
+            "classpath:prompts/translation-prompt.txt"
+        );
+
+        ProviderFactory factory = new ProviderFactory(properties, nvidiaChatModel, ollamaChatModel, nvidiaEmbeddingModel, nvidiaQueryEmbeddingModel);
+
         ChatModel model = factory.getChatModel(null);
         assertNotNull(model);
+        assertSame(nvidiaChatModel, model);
     }
 
     @Test
     void shouldReturnSpecificChatModel() {
-        ChatModel nvidia = factory.getChatModel(LLMProvider.NVIDIA);
-        ChatModel gemini = factory.getChatModel(LLMProvider.GEMINI);
-        ChatModel ollama = factory.getChatModel(LLMProvider.OLLAMA);
-        
-        assertNotNull(nvidia);
-        assertNotNull(gemini);
-        assertNotNull(ollama);
+        ChatModel nvidiaChatModel = mock(ChatModel.class);
+        ChatModel ollamaChatModel = mock(ChatModel.class);
+        EmbeddingModel nvidiaEmbeddingModel = mock(EmbeddingModel.class);
+        EmbeddingModel nvidiaQueryEmbeddingModel = mock(EmbeddingModel.class);
+
+        LlmServiceProperties properties = new LlmServiceProperties(
+            LlmServiceProperties.LLMProvider.NVIDIA,
+            "./tokenizers",
+            "classpath:prompts/translation-prompt.txt"
+        );
+
+        ProviderFactory factory = new ProviderFactory(properties, nvidiaChatModel, ollamaChatModel, nvidiaEmbeddingModel, nvidiaQueryEmbeddingModel);
+
+        assertSame(nvidiaChatModel, factory.getChatModel(LLMProvider.NVIDIA));
+        assertSame(ollamaChatModel, factory.getChatModel(LLMProvider.OLLAMA));
     }
 
     @Test
     void shouldReturnEmbeddingModel() {
+        ChatModel nvidiaChatModel = mock(ChatModel.class);
+        ChatModel ollamaChatModel = mock(ChatModel.class);
+        EmbeddingModel nvidiaEmbeddingModel = mock(EmbeddingModel.class);
+        EmbeddingModel nvidiaQueryEmbeddingModel = mock(EmbeddingModel.class);
+
+        LlmServiceProperties properties = new LlmServiceProperties(
+            LlmServiceProperties.LLMProvider.NVIDIA,
+            "./tokenizers",
+            "classpath:prompts/translation-prompt.txt"
+        );
+
+        ProviderFactory factory = new ProviderFactory(properties, nvidiaChatModel, ollamaChatModel, nvidiaEmbeddingModel, nvidiaQueryEmbeddingModel);
+
         EmbeddingModel model = factory.getEmbeddingModel(LLMProvider.NVIDIA);
         assertNotNull(model);
+        assertSame(nvidiaEmbeddingModel, model);
+    }
+
+    @Test
+    void shouldReturnQueryEmbeddingModel() {
+        ChatModel nvidiaChatModel = mock(ChatModel.class);
+        ChatModel ollamaChatModel = mock(ChatModel.class);
+        EmbeddingModel nvidiaEmbeddingModel = mock(EmbeddingModel.class);
+        EmbeddingModel nvidiaQueryEmbeddingModel = mock(EmbeddingModel.class);
+
+        LlmServiceProperties properties = new LlmServiceProperties(
+            LlmServiceProperties.LLMProvider.NVIDIA,
+            "./tokenizers",
+            "classpath:prompts/translation-prompt.txt"
+        );
+
+        ProviderFactory factory = new ProviderFactory(properties, nvidiaChatModel, ollamaChatModel, nvidiaEmbeddingModel, nvidiaQueryEmbeddingModel);
+
+        EmbeddingModel model = factory.getQueryEmbeddingModel(LLMProvider.NVIDIA);
+        assertNotNull(model);
+        assertSame(nvidiaQueryEmbeddingModel, model);
     }
 
     @Test
     void shouldThrowForUnsupportedEmbeddingProvider() {
+        ChatModel nvidiaChatModel = mock(ChatModel.class);
+        ChatModel ollamaChatModel = mock(ChatModel.class);
+        EmbeddingModel nvidiaEmbeddingModel = mock(EmbeddingModel.class);
+        EmbeddingModel nvidiaQueryEmbeddingModel = mock(EmbeddingModel.class);
+
+        LlmServiceProperties properties = new LlmServiceProperties(
+            LlmServiceProperties.LLMProvider.NVIDIA,
+            "./tokenizers",
+            "classpath:prompts/translation-prompt.txt"
+        );
+
+        ProviderFactory factory = new ProviderFactory(properties, nvidiaChatModel, ollamaChatModel, nvidiaEmbeddingModel, nvidiaQueryEmbeddingModel);
+
         assertThrows(IllegalArgumentException.class, 
-            () -> factory.getEmbeddingModel(LLMProvider.GEMINI));
+            () -> factory.getEmbeddingModel(LLMProvider.OLLAMA));
     }
 }

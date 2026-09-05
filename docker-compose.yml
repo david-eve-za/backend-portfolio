@@ -5,37 +5,56 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9411/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   eureka-server:
-    build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
+    image: goncue/eureka-server:latest
     container_name: eureka-server
     ports:
       - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     depends_on:
-      - zipkin
+      zipkin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   config-server:
-    build:
-      context: ./config-server
-      dockerfile: Dockerfile
+    image: goncue/config-server:latest
     container_name: config-server
     ports:
       - "8888:8888"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=native,docker
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
-      - eureka-server
-      - zipkin
+      eureka-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    volumes:
+      - ./config-repo:/config-repo:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+    image: goncue/api-gateway:latest
     container_name: api-gateway
     ports:
       - "8080:8080"
@@ -44,14 +63,21 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
-      - eureka-server
-      - config-server
-      - zipkin
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   security-module:
-    build:
-      context: ./security-module
-      dockerfile: Dockerfile
+    image: goncue/security-module:latest
     container_name: security-module
     ports:
       - "8081:8081"
@@ -60,14 +86,21 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
-      - eureka-server
-      - config-server
-      - zipkin
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
 
   crud-service:
-    build:
-      context: ./crud-service
-      dockerfile: Dockerfile
+    image: goncue/crud-service:latest
     container_name: crud-service
     ports:
       - "8082:8082"
@@ -76,11 +109,72 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
     depends_on:
-      - eureka-server
-      - config-server
-      - zipkin
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
     volumes:
       - crud-service-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  frontend-service:
+    image: goncue/frontend-service:latest
+    container_name: frontend-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  llm-service:
+    image: goncue/llm-service:latest
+    container_name: llm-service
+    ports:
+      - "8085:8085"
+      - "5005:5005"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    volumes:
+      - llm-service-tokenizers:/data/tokenizers
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8085/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
 
 volumes:
   crud-service-data:
+  llm-service-tokenizers:

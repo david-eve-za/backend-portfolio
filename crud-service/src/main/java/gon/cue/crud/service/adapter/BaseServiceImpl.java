@@ -3,13 +3,13 @@ package gon.cue.crud.service.adapter;
 import gon.cue.crud.model.BaseEntity;
 import gon.cue.crud.repository.BaseRepository;
 import gon.cue.crud.service.port.BaseService;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public abstract class BaseServiceImpl<T extends BaseEntity, R extends BaseRepository<T> & JpaRepository<T, Long>>
+public abstract class BaseServiceImpl<T extends BaseEntity, R extends BaseRepository<T>>
         implements BaseService<T> {
 
     protected final R repository;
@@ -26,7 +26,7 @@ public abstract class BaseServiceImpl<T extends BaseEntity, R extends BaseReposi
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<T> findById(Long id) {
+    public Optional<T> findById(UUID id) {
         return repository.findByIdActive(id);
     }
 
@@ -38,13 +38,13 @@ public abstract class BaseServiceImpl<T extends BaseEntity, R extends BaseReposi
 
     @Override
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(UUID id) {
         repository.softDeleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsById(Long id) {
+    public boolean existsById(UUID id) {
         return repository.findByIdActive(id).isPresent();
     }
 }

@@ -1,18 +1,15 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   ai:
     openai:
-      api-key: ${NVIDIA_API_KEY}
-      base-url: https://integrate.api.nvidia.com
+      api-key: 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
+      base-url: https://integrate.api.nvidia.com/v1
       chat:
-        model: meta/llama-3.1-70b-instruct
+        model: eepseek-ai/deepseek-v4-flash-0731
         max-tokens: 8192
       embedding:
         model: nvidia/nv-embedqa-e5-v5
-    google:
-      genai:
-        api-key: ${GOOGLE_API_KEY}
-      chat:
-        model: gemini-2.0-flash
     ollama:
       base-url: http://ollama:11434
       chat:
@@ -23,6 +20,59 @@ llm:
     default-provider: NVIDIA
     tokenizer-cache-dir: /data/tokenizers
     translation-prompt-path: classpath:prompts/translation-prompt.txt
+  provider:
+    nvidia:
+      model-name: openai/gpt-oss-120b
+      temperature: 0.2
+      top-p: 0.95
+      max-output-tokens: 8192
+      rate-limit: 60
+      retry-attempts: 3
+      request-timeout: 60
+      max-bucket-size: 10
+      context-size: 131072
+      chunk-safety-margin-pct: 0.15
+      max-chunk-tokens: 32768
+      min-chunk-tokens: 512
+      local-tokenizer-name: gpt2
+      local-tokenizer-dir: /data/tokenizers/nvidia
+      expansion-ratios:
+        en-es: 1.30
+        en-pt: 1.25
+        en-fr: 1.15
+        en-it: 1.10
+        en-de: 1.20
+        en-nl: 1.15
+        en-pl: 1.20
+        en-ru: 1.15
+        en-ar: 1.15
+        en-zh: 0.55
+        en-ja: 0.60
+        en-ko: 0.65
+        en-hi: 1.10
+        es-en: 0.80
+        fr-en: 0.85
+        de-en: 0.85
+        zh-en: 1.80
+        ja-en: 1.70
+        ko-en: 1.60
+        ru-en: 0.90
+        ar-en: 0.90
+    ollama:
+      model-name: llama3.2
+      temperature: 0.3
+      top-p: 0.95
+      context-size: 8192
+      validate-model: true
+      local-tokenizer-name: llama3.2
+      local-tokenizer-dir: /data/tokenizers/ollama
+      model-id: llama3.2
+    embedding:
+      model-name: nvidia/nv-embedqa-e5-v5
+      dimensions: 1024
+    rerank:
+      model-name: nvidia/nv-rerankqa-mistral-4b
+      top-n: 5
 
 eureka:
   client:

@@ -10,9 +10,9 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,36 +22,42 @@ public class RateLimitingAdvisor implements CallAdvisor {
 
     private final Map<LLMProvider, Bucket> buckets = new ConcurrentHashMap<>();
     private final ProviderConfig config;
+    private volatile boolean initialized = false;
 
     public RateLimitingAdvisor(ProviderConfig config) {
         this.config = config;
-        initializeBuckets();
     }
 
-    private void initializeBuckets() {
+    @PostConstruct
+    public void initializeBuckets() {
+        if (config == null) {
+            return;
+        }
+        
         // NVIDIA
         ProviderConfig.NvidiaConfig nvidia = config.nvidia();
-        buckets.put(LLMProvider.NVIDIA, Bucket.builder()
-            .addLimit(Bandwidth.classic(nvidia.rateLimit(), 
-                Refill.greedy(nvidia.rateLimit(), Duration.ofMinutes(1))))
-            .build());
-
-        // Gemini
-        ProviderConfig.GeminiConfig gemini = config.gemini();
-        buckets.put(LLMProvider.GEMINI, Bucket.builder()
-            .addLimit(Bandwidth.classic(gemini.rateLimit(), 
-                Refill.greedy(gemini.rateLimit(), Duration.ofMinutes(1))))
-            .build());
+        if (nvidia != null) {
+            buckets.put(LLMProvider.NVIDIA, Bucket.builder()
+                .addLimit(Bandwidth.classic(nvidia.rateLimit(), 
+                    Refill.greedy(nvidia.rateLimit(), Duration.ofMinutes(1))))
+                .build());
+        }
 
         // Ollama (no rate limit needed for local)
         buckets.put(LLMProvider.OLLAMA, Bucket.builder()
             .addLimit(Bandwidth.classic(1000, 
                 Refill.greedy(1000, Duration.ofMinutes(1))))
             .build());
+        
+        initialized = true;
     }
 
     @Override
     public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+        if (!initialized) {
+            initializeBuckets();
+        }
+        
         LLMProvider provider = extractProvider(request);
         Bucket bucket = buckets.getOrDefault(provider, buckets.get(LLMProvider.NVIDIA));
         

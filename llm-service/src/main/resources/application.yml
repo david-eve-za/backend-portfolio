@@ -1,49 +1,91 @@
 spring:
   application:
     name: llm-service
-  profiles:
-    active: local
-  cloud:
-    config:
-      enabled: false
+  config:
+    import: "optional:configserver:"
+  main:
+    allow-bean-definition-overriding: true
+  ai:
+    model:
+      chat: openai
+      embedding: openai
+    openai:
+      base-url: https://integrate.api.nvidia.com/v1
+      api-key: ${NVIDIA_API_KEY:}
+      chat:
+        model: openai/gpt-oss-120b
+        max-tokens: 8192
+        options:
+          temperature: 0.2
+          top-p: 0.95
+      embedding:
+        model: nvidia/nv-embedqa-e5-v5
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: llama3.2
 
 server:
   port: 8085
-
-spring.ai:
-  model:
-    chat: openai
-    embedding: openai
-  openai:
-    base-url: https://integrate.api.nvidia.com
-    api-key: ${NVIDIA_API_KEY:}
-    chat:
-      model: meta/llama-3.1-70b-instruct
-      max-tokens: 8192
-      options:
-        temperature: 0.2
-        top-p: 0.95
-    embedding:
-      model: nvidia/nv-embedqa-e5-v5
-  google:
-    genai:
-      api-key: ${GOOGLE_API_KEY:}
-      chat:
-        model: gemini-2.0-flash
-        options:
-          temperature: 0.3
-          top-p: 0.95
-          top-k: 40
-  ollama:
-    base-url: http://localhost:11434
-    chat:
-      model: llama3.2
 
 llm:
   service:
     default-provider: NVIDIA
     tokenizer-cache-dir: ./tokenizers
     translation-prompt-path: classpath:prompts/translation-prompt.txt
+  provider:
+    nvidia:
+      model-name: meta/llama-3.1-70b-instruct
+      temperature: 0.2
+      top-p: 0.95
+      max-output-tokens: 8192
+      rate-limit: 60
+      retry-attempts: 3
+      request-timeout: 60
+      max-bucket-size: 10
+      context-size: 131072
+      chunk-safety-margin-pct: 0.15
+      max-chunk-tokens: 32768
+      min-chunk-tokens: 512
+      local-tokenizer-name: gpt2
+      local-tokenizer-dir: ./tokenizers/nvidia
+      expansion-ratios:
+        en-es: 1.30
+        en-pt: 1.25
+        en-fr: 1.15
+        en-it: 1.10
+        en-de: 1.20
+        en-nl: 1.15
+        en-pl: 1.20
+        en-ru: 1.15
+        en-ar: 1.15
+        en-zh: 0.55
+        en-ja: 0.60
+        en-ko: 0.65
+        en-hi: 1.10
+        es-en: 0.80
+        fr-en: 0.85
+        de-en: 0.85
+        zh-en: 1.80
+        ja-en: 1.70
+        ko-en: 1.60
+        ru-en: 0.90
+        ar-en: 0.90
+    ollama:
+      model-name: llama3.2
+      temperature: 0.3
+      top-p: 0.95
+      context-size: 8192
+      validate-model: true
+      local-tokenizer-name: llama3.2
+      local-tokenizer-dir: ./tokenizers/ollama
+      model-id: llama3.2
+    embedding:
+      model-name: nvidia/nv-embedqa-e5-v5
+      dimensions: 1024
+    rerank:
+      model-name: nvidia/nv-rerankqa-mistral-4b
+      top-n: 5
 
 eureka:
   client:
@@ -54,7 +96,69 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,beans,mappings
   endpoint:
     health:
       show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: gon.cue.llmservice
+  paths-to-match: /api/**
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  remove-broken-reference-definitions: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+    import: "optional:configserver:"
+  cloud:
+    config:
+      uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka
+
+llm:
+  service:
+    tokenizer-cache-dir: /data/tokenizers
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,beans,mappings
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: gon.cue.llmservice
+  paths-to-match: /api/**
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  remove-broken-reference-definitions: true

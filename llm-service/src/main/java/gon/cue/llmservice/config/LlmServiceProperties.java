@@ -14,6 +14,6 @@ public record LlmServiceProperties(
     @NotBlank String translationPromptPath
 ) {
     public enum LLMProvider {
-        NVIDIA, GEMINI, OLLAMA
+        NVIDIA, OLLAMA
     }
 }

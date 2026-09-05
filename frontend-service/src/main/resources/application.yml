@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: frontend-service
+  config:
+    import: "optional:configserver:"
+
+server:
+  port: 8083
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  tracing:
+    enabled: false
+    sampling:
+      probability: 0.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+gateway:
+  url: http://localhost:8080
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    config:
+      uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka/
+
+gateway:
+  url: http://api-gateway:8080

@@ -29,7 +29,17 @@ class TokenChunkCalculatorTest {
             131072, 0.15, 32768, 512,
             "gpt2", tempDir.resolve("nvidia").toString(), null
         );
-        ProviderConfig config = new ProviderConfig(nvidiaConfig, null, null, null, null);
+        ProviderConfig.OllamaConfig ollamaConfig = new ProviderConfig.OllamaConfig(
+            "llama3.2", 0.3, 0.95, 8192, true,
+            "llama3.2", tempDir.resolve("ollama").toString(), "llama3.2"
+        );
+        ProviderConfig.EmbeddingConfig embeddingConfig = new ProviderConfig.EmbeddingConfig(
+            "nvidia/nv-embedqa-e5-v5", 1024
+        );
+        ProviderConfig.RerankConfig rerankConfig = new ProviderConfig.RerankConfig(
+            "nvidia/nv-rerankqa-mistral-4b", 5
+        );
+        ProviderConfig config = new ProviderConfig(nvidiaConfig, ollamaConfig, embeddingConfig, rerankConfig);
         
         TokenizerRegistry tokenizerRegistry = new TokenizerRegistry(properties);
         DocumentBySentenceSplitter splitter = new DocumentBySentenceSplitter(2000, 200);
@@ -56,7 +66,17 @@ class TokenChunkCalculatorTest {
             131072, 0.15, 32768, 512,
             "gpt2", tempDir.resolve("nvidia").toString(), null
         );
-        ProviderConfig config = new ProviderConfig(nvidiaConfig, null, null, null, null);
+        ProviderConfig.OllamaConfig ollamaConfig = new ProviderConfig.OllamaConfig(
+            "llama3.2", 0.3, 0.95, 8192, true,
+            "llama3.2", tempDir.resolve("ollama").toString(), "llama3.2"
+        );
+        ProviderConfig.EmbeddingConfig embeddingConfig = new ProviderConfig.EmbeddingConfig(
+            "nvidia/nv-embedqa-e5-v5", 1024
+        );
+        ProviderConfig.RerankConfig rerankConfig = new ProviderConfig.RerankConfig(
+            "nvidia/nv-rerankqa-mistral-4b", 5
+        );
+        ProviderConfig config = new ProviderConfig(nvidiaConfig, ollamaConfig, embeddingConfig, rerankConfig);
         
         TokenizerRegistry tokenizerRegistry = new TokenizerRegistry(properties);
         DocumentBySentenceSplitter splitter = new DocumentBySentenceSplitter(2000, 200);
@@ -89,12 +109,24 @@ class TokenChunkCalculatorTest {
             131072, 0.15, 32768, 512,
             "gpt2", tempDir.resolve("nvidia").toString(), null
         );
-        ProviderConfig config = new ProviderConfig(nvidiaConfig, null, null, null, null);
+        ProviderConfig.OllamaConfig ollamaConfig = new ProviderConfig.OllamaConfig(
+            "llama3.2", 0.3, 0.95, 8192, true,
+            "llama3.2", tempDir.resolve("ollama").toString(), "llama3.2"
+        );
+        ProviderConfig.EmbeddingConfig embeddingConfig = new ProviderConfig.EmbeddingConfig(
+            "nvidia/nv-embedqa-e5-v5", 1024
+        );
+        ProviderConfig.RerankConfig rerankConfig = new ProviderConfig.RerankConfig(
+            "nvidia/nv-rerankqa-mistral-4b", 5
+        );
+        ProviderConfig config = new ProviderConfig(nvidiaConfig, ollamaConfig, embeddingConfig, rerankConfig);
         
         TokenizerRegistry tokenizerRegistry = new TokenizerRegistry(properties);
         DocumentBySentenceSplitter splitter = new DocumentBySentenceSplitter(2000, 200);
         
         TokenChunkCalculator calculator = new TokenChunkCalculator(tokenizerRegistry, config, splitter, properties);
+        
+        DJLTokenizer tokenizer = tokenizerRegistry.getTokenizer("gpt2", TokenizerType.HUGGINGFACE);
         
         double ratio = calculator.getExpansionRatio("en", "es");
         assertEquals(1.30, ratio);

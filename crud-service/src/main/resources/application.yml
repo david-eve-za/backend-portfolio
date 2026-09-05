@@ -1,6 +1,12 @@
+security:
+  jwt:
+    secret: ${JWT_SECRET:bllRbxCOXTiYhFGAapfUb4ob3bglSuz7QJ8xUpmTV9M=}
+
 spring:
   application:
     name: crud-service
+  config:
+    import: "optional:configserver:"
   datasource:
     url: jdbc:h2:file:./data/crud-service;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
     driver-class-name: org.h2.Driver
@@ -80,3 +86,17 @@ logging:
     org.springframework.cloud: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  cloud:
+    config:
+      uri: http://config-server:8888
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@eureka-server:8761/eureka/

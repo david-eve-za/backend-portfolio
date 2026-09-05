@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -23,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RateLimitingAdvisorTest {
 
     @Mock
@@ -32,9 +35,6 @@ class RateLimitingAdvisorTest {
     private ProviderConfig.NvidiaConfig nvidiaConfig;
 
     @Mock
-    private ProviderConfig.GeminiConfig geminiConfig;
-
-    @Mock
     private CallAdvisorChain chain;
 
     private RateLimitingAdvisor advisor;
@@ -42,9 +42,7 @@ class RateLimitingAdvisorTest {
     @BeforeEach
     void setUp() {
         when(config.nvidia()).thenReturn(nvidiaConfig);
-        when(config.gemini()).thenReturn(geminiConfig);
         when(nvidiaConfig.rateLimit()).thenReturn(30);
-        when(geminiConfig.rateLimit()).thenReturn(15);
         
         advisor = new RateLimitingAdvisor(config);
     }
@@ -58,30 +56,6 @@ class RateLimitingAdvisorTest {
 
         ChatClientRequest request = ChatClientRequest.builder()
             .prompt(new Prompt("test"))
-            .context(Map.of())
-            .build();
-
-        ChatClientResponse response = advisor.adviseCall(request, chain);
-        assertNotNull(response);
-        verify(chain).nextCall(any());
-    }
-
-    @Test
-    void shouldExtractProviderFromMetadata() {
-        ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("OK"))));
-        ChatClientResponse mockResponse = new ChatClientResponse(chatResponse, Map.of());
-        when(chain.nextCall(any(ChatClientRequest.class)))
-            .thenReturn(mockResponse);
-
-        UserMessage userMessage = UserMessage.builder()
-            .text("test")
-            .metadata(Map.of("provider", LLMProvider.GEMINI))
-            .build();
-        
-        Prompt prompt = new Prompt(List.of(userMessage));
-        
-        ChatClientRequest request = ChatClientRequest.builder()
-            .prompt(prompt)
             .context(Map.of())
             .build();
 

@@ -104,7 +104,7 @@ public class LLMProviderService {
 
     private GenerateResponse translateWithNvidiaAdaptive(TranslateRequest request) {
         DJLTokenizer tokenizer = tokenizerRegistry.getTokenizer(
-            "meta-llama/Mistral-Large-3-675B-Instruct-2512", 
+            "gpt2", 
             TokenizerType.HUGGINGFACE
         );
 
@@ -128,7 +128,7 @@ public class LLMProviderService {
 
         GenerateResponse response = new GenerateResponse();
         response.setContent(translation.toString());
-        response.setModelName("meta/llama-3.1-70b-instruct");
+        response.setModelName("openai/gpt-oss-120b");
         response.setProvider(LLMProvider.NVIDIA);
         return response;
     }
@@ -152,7 +152,7 @@ public class LLMProviderService {
     }
 
     public EmbedResponse embed(EmbedRequest request) {
-        EmbeddingModel embeddingModel = providerFactory.getEmbeddingModel(LLMProvider.NVIDIA);
+        EmbeddingModel embeddingModel = providerFactory.getQueryEmbeddingModel(LLMProvider.NVIDIA);
         
         List<String> texts;
         if (request.getInput() instanceof String) {
@@ -223,8 +223,7 @@ public class LLMProviderService {
 
     private String getModelName(LLMProvider provider) {
         return switch (provider) {
-            case NVIDIA -> "meta/llama-3.1-70b-instruct";
-            case GEMINI -> "gemini-2.0-flash";
+            case NVIDIA -> "openai/gpt-oss-120b";
             case OLLAMA -> "llama3.2";
         };
     }

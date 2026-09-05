@@ -46,6 +46,22 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
             </plugin>
+            <!-- Jib Maven Plugin for container image building -->
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <container>
+                        <ports>
+                            <port>8888</port>
+                        </ports>
+                        <environment>
+                            <EUREKA_CLIENT_SERVICEURL_DEFAULTZONE>http://eureka-server:8761/eureka/</EUREKA_CLIENT_SERVICEURL_DEFAULTZONE>
+                            <SPRING_CLOUD_CONFIG_URI>http://config-server:8888</SPRING_CLOUD_CONFIG_URI>
+                        </environment>
+                    </container>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

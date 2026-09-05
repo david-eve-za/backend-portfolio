@@ -21,10 +21,15 @@
     <jacoco.version>0.8.15</jacoco.version>
     <checkstyle.version>3.5.0</checkstyle.version>
     <sonar.projectKey>backend-portfolio</sonar.projectKey>
-    <spring-ai.version>1.1.8</spring-ai.version>
+    <spring-ai.version>2.0.0-M1</spring-ai.version>
     <testcontainers.version>1.20.0</testcontainers.version>
     <djl.version>0.28.0</djl.version>
     <langchain4j.version>1.9.1</langchain4j.version>
+    <springdoc.version>2.3.0</springdoc.version>
+    <jib.version>3.4.0</jib.version>
+    <docker.registry>docker.io</docker.registry>
+    <docker.image.prefix>goncue</docker.image.prefix>
+    <jib.platforms>linux/arm64,linux/amd64</jib.platforms>
   </properties>
 
   <dependencyManagement>
@@ -84,6 +89,17 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- SpringDoc OpenAPI -->
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <modules>
@@ -93,7 +109,44 @@
     <module>config-server</module>
     <module>crud-service</module>
     <module>llm-service</module>
+    <module>frontend-service</module>
   </modules>
+  <repositories>
+    <repository>
+      <id>spring-snapshots</id>
+      <name>Spring Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>spring-snapshots</id>
+      <name>Spring Snapshots</name>
+      <url>https://repo.spring.io/snapshot</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>spring-milestones</id>
+      <name>Spring Milestones</name>
+      <url>https://repo.spring.io/milestone</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <plugins>
@@ -146,5 +199,60 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <!-- Jib Maven Plugin for container image building -->
+        <plugin>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <version>${jib.version}</version>
+          <configuration>
+            <from>
+              <image>eclipse-temurin:21-jre</image>
+            </from>
+            <to>
+              <image>${docker.registry}/${docker.image.prefix}/${project.artifactId}</image>
+              <tags>
+                <tag>${project.version}</tag>
+                <tag>latest</tag>
+              </tags>
+            </to>
+            <container>
+              <jvmFlags>
+                <jvmFlag>-XX:+UseContainerSupport</jvmFlag>
+                <jvmFlag>-XX:MaxRAMPercentage=75.0</jvmFlag>
+              </jvmFlags>
+              <ports>
+                <port>8080</port>
+                <port>8081</port>
+                <port>8082</port>
+                <port>8085</port>
+                <port>8761</port>
+                <port>8888</port>
+              </ports>
+              <environment>
+                <SPRING_PROFILES_ACTIVE>docker</SPRING_PROFILES_ACTIVE>
+              </environment>
+              <labels>
+                <label>org.opencontainers.image.source>https://github.com/goncue/backend-portfolio</label>
+                <label>org.opencontainers.image.version>${project.version}</label>
+              </labels>
+            </container>
+            <platforms>
+              <platform>linux/arm64</platform>
+              <platform>linux/amd64</platform>
+            </platforms>
+          </configuration>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>dockerBuild</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>

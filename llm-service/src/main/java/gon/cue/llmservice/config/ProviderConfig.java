@@ -14,7 +14,6 @@ import java.util.Map;
 @Validated
 public record ProviderConfig(
     NvidiaConfig nvidia,
-    GeminiConfig gemini,
     OllamaConfig ollama,
     EmbeddingConfig embedding,
     RerankConfig rerank
@@ -35,18 +34,6 @@ public record ProviderConfig(
         @NotBlank String localTokenizerName,
         @NotBlank String localTokenizerDir,
         Map<String, Double> expansionRatios
-    ) {}
-
-    public record GeminiConfig(
-        @NotNull java.util.List<String> modelNames,
-        @DecimalMin("0.0") @DecimalMax("2.0") double temperature,
-        @DecimalMin("0.0") @DecimalMax("1.0") double topP,
-        @Min(1) int topK,
-        @Min(1) int contextSize,
-        @Min(1) int rateLimit,
-        @Min(1) int maxBucketSize,
-        @Min(1) int requestTimeout,
-        @Min(1) int retryAttempts
     ) {}
 
     public record OllamaConfig(

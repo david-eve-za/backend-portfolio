@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "a58adeef5a17bf1be9e701f32bbc3a7d24340ffc",
-    "indexed_at": "2026-08-18T01:22:34Z",
+    "commit": "7621fb4964efa3095d61898aab78eb5166021e3e",
+    "indexed_at": "2026-08-22T21:36:59Z",
     "project": "Volumes-Elements2-IdeaProjects-backend-project",
-    "nodes": 1405,
-    "edges": 2271,
-    "original_size": 4653056,
-    "compressed_size": 423489,
+    "nodes": 2069,
+    "edges": 3962,
+    "original_size": 6553600,
+    "compressed_size": 711968,
     "compression_level": 3
 }

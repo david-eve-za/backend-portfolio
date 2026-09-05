@@ -16,17 +16,18 @@ public class ProviderFactory {
     private final LlmServiceProperties properties;
     private final Map<LLMProvider, ChatModel> chatModels = new ConcurrentHashMap<>();
     private final Map<LLMProvider, EmbeddingModel> embeddingModels = new ConcurrentHashMap<>();
+    private final Map<LLMProvider, EmbeddingModel> queryEmbeddingModels = new ConcurrentHashMap<>();
 
     public ProviderFactory(LlmServiceProperties properties,
                            @Qualifier("nvidiaChatModel") ChatModel nvidiaChatModel,
-                           @Qualifier("geminiChatModel") ChatModel geminiChatModel,
                            @Qualifier("ollamaChatModel") ChatModel ollamaChatModel,
-                           @Qualifier("nvidiaEmbeddingModel") EmbeddingModel nvidiaEmbeddingModel) {
+                           @Qualifier("nvidiaEmbeddingModel") EmbeddingModel nvidiaEmbeddingModel,
+                           @Qualifier("nvidiaQueryEmbeddingModel") EmbeddingModel nvidiaQueryEmbeddingModel) {
         this.properties = properties;
         chatModels.put(LLMProvider.NVIDIA, nvidiaChatModel);
-        chatModels.put(LLMProvider.GEMINI, geminiChatModel);
         chatModels.put(LLMProvider.OLLAMA, ollamaChatModel);
         embeddingModels.put(LLMProvider.NVIDIA, nvidiaEmbeddingModel);
+        queryEmbeddingModels.put(LLMProvider.NVIDIA, nvidiaQueryEmbeddingModel);
     }
 
     public ChatModel getChatModel(LLMProvider provider) {
@@ -47,6 +48,15 @@ public class ProviderFactory {
         return model;
     }
 
+    public EmbeddingModel getQueryEmbeddingModel(LLMProvider provider) {
+        LLMProvider effectiveProvider = provider != null ? provider : LLMProvider.NVIDIA;
+        EmbeddingModel model = queryEmbeddingModels.get(effectiveProvider);
+        if (model == null) {
+            throw new IllegalArgumentException("No query embedding model for provider: " + effectiveProvider);
+        }
+        return model;
+    }
+
     public LLMProvider getDefaultProvider() {
         return toModelProvider(properties.defaultProvider());
     }
@@ -54,7 +64,6 @@ public class ProviderFactory {
     private LLMProvider toModelProvider(LlmServiceProperties.LLMProvider configProvider) {
         return switch (configProvider) {
             case NVIDIA -> LLMProvider.NVIDIA;
-            case GEMINI -> LLMProvider.GEMINI;
             case OLLAMA -> LLMProvider.OLLAMA;
         };
     }
