@@ -1,5 +1,6 @@
 package gon.cue.security.util;
 
+import gon.cue.security.service.adapter.JwtServiceImpl;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -23,17 +24,17 @@ import static org.junit.jupiter.api.Assertions.*;
 public class JwtUtilTest {
 
     @InjectMocks
-    private JwtUtil jwtUtil;
+    private JwtServiceImpl jwtUtil;
 
     private String secretKey = "Neg4Z0GYLPWLsAx1FleNFuis0hfSsw1fucxxEHf30js=";
     private final long expiration = 36000000; // 10 hours
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(jwtUtil, "SECRET_KEY", secretKey);
-        ReflectionTestUtils.setField(jwtUtil, "expiration", expiration);
-    }
+	@BeforeEach
+	public void setUp() {
+		MockitoAnnotations.openMocks(this);
+		ReflectionTestUtils.setField(jwtUtil, "secretKey", secretKey);
+		ReflectionTestUtils.setField(jwtUtil, "expiration", expiration);
+	}
 
     private String createTestToken(String username, Date expirationDate) {
         Map<String, Object> claims = new HashMap<>();
@@ -57,13 +58,12 @@ public class JwtUtilTest {
         assertEquals(username, jwtUtil.extractUsername(token));
     }
 
-    @Test
-    void extractExpiration() {
-        String username = "testuser";
-        String token = jwtUtil.generateToken(username);
-        assertNotNull(jwtUtil.extractExpiration(token));
-        assertTrue(jwtUtil.extractExpiration(token).after(new Date()));
-    }
+	@Test
+	void extractExpiration() {
+		String username = "testuser";
+		String token = jwtUtil.generateToken(username);
+		assertFalse(jwtUtil.isTokenExpired(token));
+	}
 
     @Test
     void validateToken_validToken() {

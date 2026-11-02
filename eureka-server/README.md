@@ -1,20 +1,33 @@
 # Eureka Server Module
 
-This module implements a Eureka Discovery Server, which is part of the Netflix OSS stack for service discovery. It allows microservices to register themselves and discover other services in the architecture.
+This module implements a Eureka Discovery Server (Spring Cloud Netflix Eureka 5.x), the
+central registry for service registration and discovery in the architecture. Microservices
+register with this server on startup, making their location and status known so others can
+look them up dynamically — no hardcoded addresses.
 
 ## Role in the Architecture
 
-The Eureka Server is the central component for service registration and discovery. Other microservices (like the API Gateway or future services) will register with this server upon startup, making their location and status known. This enables dynamic service lookup without hardcoding service addresses.
+The Eureka Server is the central component for service registration and discovery. Other
+microservices (the API Gateway, Security Module, Config Server, and future services)
+register with this server upon startup, enabling dynamic service lookup without hardcoding
+service addresses. Client-side load balancing distributes requests across registered
+instances.
 
-## Technologies Used
+## Technology Stack
 
-*   Spring Boot
-*   Spring Cloud Netflix Eureka Server
-*   Java 17
+| Category | Technology | Version |
+|----------|------------|---------|
+| Framework | Spring Boot | 4.1.0 |
+| Service Discovery | Spring Cloud Netflix Eureka Server | 5.x |
+| Distributed tracing | Micrometer + Zipkin (Brave bridge) | BOM-managed |
+| Actuator | Spring Boot Actuator | BOM-managed |
+| Language | Java | 21 (LTS) |
 
 ## Getting Started
 
 ### Running the Eureka Server
+
+**Start this module first** — other services depend on it for registration.
 
 1.  Ensure the parent project has been built (`mvn clean install` from the root directory).
 2.  Navigate to the `eureka-server` directory:
@@ -26,8 +39,23 @@ The Eureka Server is the central component for service registration and discover
     mvn spring-boot:run
     ```
 
-The Eureka Server will typically start on port `8761` (default for Eureka). You can access its dashboard via `http://localhost:8761`.
+The Eureka Server starts on port `8761` (the Eureka default). Access its dashboard at
+[http://localhost:8761](http://localhost:8761) to see registered services and their status.
 
 ## Configuration
 
-The `application.properties` (or `application.yml`) in this module will contain specific configurations for the Eureka Server, such as port, hostname, and peer registration settings.
+The `application.yml` in this module contains key Eureka settings:
+
+*   **`server.port`** — `8761` (Eureka default).
+*   **`eureka.client.register-with-eureka`** — `false` (standalone server; it does not
+    register with itself).
+*   **`eureka.client.fetch-registry`** — `false` (standalone server; no need to fetch the
+    registry).
+*   **`spring.cloud.config.enabled`** — `false` (this server does not fetch config from the
+    config-server, breaking a startup-order dependency).
+
+### Verifying Registration
+
+Once the Eureka Server is running and other services are started, open the dashboard at
+[http://localhost:8761](http://localhost:8761). Registered instances (`SECURITY-SERVICE`,
+`API-GATEWAY`, `CONFIG-SERVER`) appear under "Instances currently registered with Eureka."
